@@ -8,9 +8,13 @@ import shutil
 import logging
 import sys
 import threading
+import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote # For safe image URLs
+
+# --- Third-party Imports ---
+from dotenv import load_dotenv
 
 # --- Import Flask ---
 try:
@@ -27,6 +31,9 @@ try:
 except ImportError:
     print("ERROR: tqdm library not found. Please install it: pip install tqdm")
     sys.exit(1)
+
+# --- Load environment variables (.env) ---
+load_dotenv()  # Looking for TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID
 
 print("DEBUG: Script execution started (v6).")
 
@@ -53,6 +60,17 @@ COMFYUI_INPUT_DIR_BASE = Path("D:/Comfy_UI_V20/ComfyUI/input") # <<< USER MUST S
 COMFYUI_OUTPUT_DIR_BASE = Path("H:/dancers_content") # <<< USER MUST SET
 TEMP_VIDEO_START_SUBDIR = "temp_video_starts"
 # !!! END USER SETTINGS !!!
+
+# --- Telegram Approval Paths & Env Vars ---
+TELEGRAM_APPROVALS_DIR = SCRIPT_DIR / "telegram_approvals"
+SEND_TELEGRAM_SCRIPT = TELEGRAM_APPROVALS_DIR / "send_telegram_image_approvals.py"
+TELEGRAM_APPROVALS_JSON = TELEGRAM_APPROVALS_DIR / "telegram_approvals.json"
+TOKEN_MAP_JSON = TELEGRAM_APPROVALS_DIR / "token_map.json"
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+    print("WARNING: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set in .env. Telegram approval will fail if chosen.")
 
 print(f"DEBUG: Script directory: {SCRIPT_DIR}")
 print(f"DEBUG: Assumed ComfyUI Input Base: {COMFYUI_INPUT_DIR_BASE}")
@@ -114,40 +132,229 @@ def load_config(config_path="config_with_faceswap.json"):
     except KeyError as e: logger.critical(f"CRITICAL: {e} in config '{config_path}'"); sys.exit(1)
     except Exception as e: logger.critical(f"CRITICAL error loading/validating config '{config_path}': {e}", exc_info=True); sys.exit(1)
 
-# --- Ollama Prompt Generation ---
-# (Keep same function from v5)
+# === 🔥 ENHANCED PROMPT GENERATION SYSTEM (IDENTICAL TO WITHOUT_FACESWAP) ===
+
+# Dictionary to hold modular prompt components for high variety + VIRAL CONTENT
+PROMPT_ELEMENTS = {
+    "locations": [
+        # Traditional Cultural Locations
+        "a vibrant Bollywood dance festival in Mumbai with colorful decorations and cheering crowds",
+        "a luxurious rooftop party overlooking the Gateway of India in Mumbai with city lights",
+        "a traditional Indian wedding celebration with marigold flowers, fairy lights, and excited guests",
+        "a high-energy Punjabi bhangra competition in a decorated mandap with loud music",
+        "a glamorous Indian fashion show with runway lights, cameras, and applauding audience",
+        "a festive Holi celebration with colorful powder, traditional music, and dancing people",
+        "an exclusive pool party at a luxury resort in Goa with palm trees and sunset views",
+        "a vibrant Navratri garba dance festival with ornate decorations and spinning dancers",
+        "a modern Indian nightclub with neon lights, DJ booth, and energetic crowd",
+        "a beachside party in Kerala during sunset with coconut palms and crashing waves",
+        "a royal palace courtyard in Rajasthan converted into a dance venue with torches",
+        "a contemporary Indian cultural festival with modern and traditional fusion elements",
+        
+        # 🔥 VIRAL UNIFORM THEMES - Maximum Appeal
+        "a busy Indian police station with official desks, computers, and uniformed officers in background",
+        "a modern Indian hospital emergency room with medical equipment, beds, and staff bustling around",
+        "an upscale Indian corporate office with glass desks, computers, and professional atmosphere",
+        "a prestigious Indian college campus with students, books, and academic buildings",
+        "a high-end Indian restaurant kitchen with professional equipment, chefs, and busy service",
+        "an exclusive Indian gym with modern equipment, mirrors, and fitness enthusiasts",
+        "a luxurious Indian spa with massage tables, aromatherapy, and relaxation atmosphere",
+        "an Indian courtroom with judge's bench, law books, and formal legal atmosphere",
+        "a modern Indian television news studio with cameras, lights, and broadcasting equipment",
+        "an Indian military training facility with equipment, flags, and disciplined environment",
+        "a professional Indian photography studio with lighting equipment, cameras, and backdrops",
+        "an Indian airline cabin with seats, overhead bins, and flight attendant service area"
+    ],
+    
+    "attires": [
+        # Traditional Revealing Outfits - ENHANCED FOR APPROPRIATE COVERAGE
+        "a fitted, deep V-neck choli blouse with push-up design showing massive cleavage but covering nipples, paired with a short lehenga skirt that shows her midriff and curves",
+        "a sequined saree blouse with plunging neckline that creates dramatic cleavage while keeping nipples covered, with saree draped very low on hips showing maximum skin",
+        "a mini ghagra with intricate embroidery and a backless, halter-style choli with deep side cuts that shows underboob but keeps nipples covered",
+        "a modern fusion outfit: tiny denim shorts with a cropped, traditional mirror-work halter top that shows maximum cleavage and entire midriff while covering nipples",
+        "a sheer dupatta draped over a push-up style bikini top with coverage, and ultra-short sharara pants that show her curves",
+        
+        # 🔥 VIRAL UNIFORM VARIATIONS - Maximum Appeal with Appropriate Coverage
+        "a provocative flight attendant costume: an ultra-tight, plunging V-neck airline blouse with buttons strategically placed to show maximum cleavage while covering nipples, and a micro mini skirt",
+        "a seductive office secretary look: a business shirt with deep neckline tied under the chest to create maximum cleavage display while keeping nipples covered, with a tiny pencil skirt",
+        "a college student outfit: a school tie with a tight, low-cut tank top that shows massive cleavage but covers nipples, and an ultra-short plaid skirt",
+        "a tempting chef costume: a white chef's hat with a halter-style apron top that shows maximum cleavage and side boob while covering nipples, with tiny chef shorts",
+        "a fitness instructor outfit: a push-up sports bra with deep neckline that shows massive cleavage but covers nipples, and micro athletic shorts",
+        "a courtroom professional look: a lawyer's blazer worn open over a deep V-neck camisole that shows maximum cleavage while covering nipples, with a tiny pencil skirt",
+        "a medical professional outfit: a white halter-style scrub top with deep neckline and red cross detail that shows maximum cleavage but covers nipples, with a tiny white skirt",
+        "a modified Indian police uniform: an extremely tight, deep V-neck police shirt that shows massive cleavage while covering nipples, with a tiny police cap and micro shorts",
+        "a news anchor look: a professional blazer worn open over a plunging neckline camisole that creates maximum cleavage display while covering nipples, with a tiny skirt",
+        "a military inspired uniform: a deep V-neck camouflage halter top with dog tags that shows maximum cleavage but covers nipples, and tiny camo shorts"
+    ],
+    
+    "dance_actions": [
+        "performing energetic bhangra moves with dramatic shoulder shaking and hip movements that make her chest bounce",
+        "executing graceful classical Indian dance poses that emphasize her curves and chest movements",
+        "doing seductive Bollywood-style hip sways and chest pops while moving sensually toward the camera",
+        "performing traditional garba spins modified with modern, sensual body movements and breast bouncing",
+        "dancing with powerful Punjabi moves that showcase her bouncing chest and swaying hips",
+        "executing fluid, snake-like movements inspired by classical Indian dance that highlight her curves",
+        "doing contemporary fusion dance that combines traditional mudras with modern, sexy movements",
+        "performing rhythmic thumri-inspired moves with graceful arm movements and dramatic body rolls that emphasize her figure"
+    ],
+    
+    "camera_shots": [
+        "a dynamic low-angle shot emphasizing her powerful dance moves, dominant presence, and bursting cleavage",
+        "an intimate close-up focusing on her expressive Indian features, bouncing chest, and sensual expressions",
+        "a cinematic medium shot that captures her full dance movements and revealing outfit against the backdrop",
+        "a dramatic side-angle shot highlighting the curves of her silhouette, exposed skin, and hip movements",
+        "a slow-motion full-body shot that emphasizes every bounce, sway, and curve of her voluptuous figure",
+        "a follow-shot from behind focusing on her hip movements, exposed back, and the flow of her minimal outfit"
+    ],
+    
+    "lighting": [
+        "bathed in warm, golden Indian sunset light creating an ethereal glow around her exposed skin",
+        "dramatically lit by colorful festival lights and diyas creating vibrant shadows on her curves",
+        "illuminated by soft, romantic moonlight mixed with traditional oil lamps highlighting her figure",
+        "backlit by bright Bollywood-style stage lights creating a star-like silhouette of her voluptuous body",
+        "under the warm glow of traditional Indian lanterns and fairy lights that accentuate her skin",
+        "in bright, high-key professional lighting that showcases every detail of her revealing outfit and curves"
+    ]
+}
+
 def generate_prompts_ollama(model, num_prompts, ollama_api_url):
-    # ... (same as v5) ...
-    logger.info(f"🚀 Generating {num_prompts} prompts via Ollama (Model: {model}, URL: {ollama_api_url})...")
-    backgrounds = [ "sea side view", "beach party", "inhouse party" ]
+    """
+    🔥 ENHANCED: Generates prompts using ONE consistent theme AND attire per run.
+    All prompts in this run will use the SAME location/theme AND outfit but vary other elements for diversity.
+    """
+    logger.info(f"🚀 Generating {num_prompts} prompts with ONE CONSISTENT THEME + ATTIRE (Model: {model})...")
+    
+    # 🔥 STEP 1: SELECT ONE THEME AND ONE ATTIRE FOR THE ENTIRE RUN!
+    selected_location = random.choice(PROMPT_ELEMENTS["locations"])
+    selected_attire = random.choice(PROMPT_ELEMENTS["attires"])
+    
+    # 🔥 LOG THE SELECTED THEME AND ATTIRE PROMINENTLY
+    logger.info("=" * 100)
+    logger.info(f"🎭 SELECTED THEME FOR THIS ENTIRE RUN:")
+    logger.info(f"    LOCATION: {selected_location}")
+    logger.info("=" * 100)
+    logger.info(f"👗 SELECTED ATTIRE FOR THIS ENTIRE RUN:")
+    logger.info(f"    OUTFIT: {selected_attire}")
+    logger.info("=" * 100)
+    
+    print("=" * 100)
+    print(f"🎭 THIS RUN'S CONSISTENT THEME:")
+    print(f"    LOCATION: {selected_location}")
+    print(f"👗 THIS RUN'S CONSISTENT ATTIRE:")
+    print(f"    OUTFIT: {selected_attire}")
+    print("=" * 100)
+    
     generated_prompt_list = []
+
     for i in range(num_prompts):
-        background = random.choice(backgrounds)
-        base_scene_idea = (f"A gorgeous, confident female dancer with revealing, facing camera, short clothing (like a small blouse top and super  large natural bust and ass revealing indian saree with hot pants) and very noticeable curves,  large natural bust out, small visible nipple " f"dancing energetically as the main focus in/at {background}. " f"Camera is medium shot or close-up on her. Other attractive people and dancers are visible partying " f"in the background but slightly blurred or less detailed. Focus on a vibrant, sexy, high-energy, " f"cinematic party atmosphere. indian festival ground")
-        formatted_prompt = f"""Generate ONE single-line, in the prompt include  large natural bust popping out hard, highly detailed cinematic prompt for AI image/video. Focus on visual elements: dynamic lighting, camera angle/shot type (e.g., low angle close-up, dynamic medium shot), mood (energetic, celebratory, sexy), specific details about the main dancer's attire (short, revealing), expression (confident, playful),  large natural bust and the specific party environment ({background}). Include details about background dancers/partygoers. NO commentary. Respond ONLY with a valid JSON object: {{"prompts": ["<your prompt here>"]}}\n\nScene Desc:\n{base_scene_idea}"""
-        logger.info(f"\n🧠 Requesting Prompt [{i+1}/{num_prompts}] | Theme: {background}")
-        ollama_success = False; last_error = None
+        # 🔥 STEP 2: USE THE SAME LOCATION AND ATTIRE FOR ALL PROMPTS IN THIS RUN!
+        location = selected_location  # FIXED THEME - NO RANDOM SELECTION HERE!
+        attire = selected_attire      # FIXED ATTIRE - NO RANDOM SELECTION HERE!
+        
+        # 🔥 STEP 3: VARY OTHER ELEMENTS FOR DIVERSITY WITHIN THE SAME THEME + ATTIRE
+        dance_action = random.choice(PROMPT_ELEMENTS["dance_actions"])
+        camera_shot = random.choice(PROMPT_ELEMENTS["camera_shots"])
+        lighting = random.choice(PROMPT_ELEMENTS["lighting"])
+
+        # Create a rich, detailed description for Ollama to synthesize
+        dynamic_scene_description = (
+            f"The main subject is a gorgeous, stunning Indian woman with extremely voluptuous curves, very large natural breasts with dramatic cleavage, "
+            f"and an incredibly sexy, confident presence. She has beautiful Indian features, long dark hair, and radiant skin. "
+            f"She is wearing {attire} that shows maximum skin while being extremely revealing but tastefully covered (nipples covered, no nudity). "
+            f"She is at {location}. "  # 🔥 SAME LOCATION FOR ALL PROMPTS!
+            f"The lighting is {lighting}. "
+            f"She is {dance_action}. "
+            f"The camera is capturing this with {camera_shot}. "
+            f"The atmosphere is high-energy, sensual, and culturally rich. Her outfit reveals her curves, massive cleavage, midriff, "
+            f"and hips in an artistic but maximally revealing way while maintaining appropriate coverage. She is the absolute focus with incredible sex appeal and viral potential."
+        )
+
+        # The instruction for Ollama guides it to use our detailed scene
+        formatted_prompt = (
+            f"""Synthesize the following scene details into ONE single-line, highly-detailed, and evocative cinematic prompt for AI video generation.
+            The final prompt must be a masterpiece of visual description focusing on a stunning Indian woman with maximum sex appeal.
+            Strictly adhere to all details provided. Do not add commentary or extra text.
+            IMPORTANT: The main subject must be a beautiful Indian woman with extremely voluptuous curves, large breasts with dramatic cleavage, and revealing/provocative clothing that covers nipples (no nudity, no exposed nipples, tastefully covered).
+            The dance must be energetic Indian dance styles with chest bouncing, hip movements, and sensual body movements.
+            Emphasize her Indian heritage, cultural elements, and maximum skin showing in a tasteful but extremely revealing way with appropriate coverage.
+            Make it viral-worthy with high sex appeal while maintaining artistic quality and appropriate coverage standards.
+            Respond ONLY with a valid JSON object in the format: {{"prompts": ["<your synthesized prompt here>"]}}
+
+            Scene Details to Synthesize:
+            ---
+            {dynamic_scene_description}
+            ---
+            """
+        )
+        
+        logger.info(f"\n🧠 Requesting Prompt [{i+1}/{num_prompts}] | CONSISTENT THEME + ATTIRE")
+        logger.debug(f"   Theme: {selected_location[:60]}...")
+        logger.debug(f"   Attire: {selected_attire[:60]}...")
+        logger.debug(f"   Variation elements: {dance_action[:40]}... | {camera_shot[:30]}... | {lighting[:30]}...")
+        
+        ollama_success = False
+        last_error = None
+
         for attempt in range(OLLAMA_MAX_RETRIES):
             logger.debug(f"   Ollama Attempt {attempt+1}/{OLLAMA_MAX_RETRIES}...")
             try:
                 response = requests.post(ollama_api_url, json={"model": model, "prompt": formatted_prompt, "stream": False}, timeout=OLLAMA_TIMEOUT)
-                response.raise_for_status(); response_json = response.json(); generated_text = response_json.get("response", "").strip()
+                response.raise_for_status()
+                response_json = response.json()
+                generated_text = response_json.get("response", "").strip()
+                
                 try:
-                    start_index = generated_text.find('{'); end_index = generated_text.rfind('}')
+                    start_index = generated_text.find('{')
+                    end_index = generated_text.rfind('}')
                     if start_index != -1 and end_index != -1 and start_index < end_index:
-                        json_str = generated_text[start_index:end_index+1]; parsed = json.loads(json_str)
+                        json_str = generated_text[start_index:end_index+1]
+                        parsed = json.loads(json_str)
                         if "prompts" in parsed and isinstance(parsed["prompts"], list) and parsed["prompts"]:
                             prompt_text = parsed["prompts"][0].strip()
-                            if prompt_text: logger.info(f"   ✅ Clean Prompt Extracted:\n      '{prompt_text}'"); generated_prompt_list.append({"index": i + 1, "background": background, "generated_prompt": prompt_text}); ollama_success = True; break
-                            else: last_error = ValueError("Empty prompt string in JSON.")
-                        else: last_error = ValueError("Invalid JSON structure ('prompts' missing/empty).")
-                    else: last_error = ValueError("JSON brackets not found or invalid in Ollama response.")
-                except json.JSONDecodeError as json_e: last_error = json_e; logger.warning(f"   ❌ Could not decode JSON from Ollama response (Attempt {attempt+1}): {json_e}"); logger.debug(f"      Ollama raw response: {generated_text}")
-            except requests.exceptions.RequestException as e: last_error = e; logger.warning(f"   ❌ Error connecting to Ollama (Attempt {attempt+1}): {e}")
-            except Exception as e: last_error = e; logger.warning(f"   ❌ Unexpected error processing Ollama (Attempt {attempt+1}): {e}")
-            if not ollama_success and attempt < OLLAMA_MAX_RETRIES - 1: logger.info(f"      Retrying Ollama in {OLLAMA_RETRY_DELAY}s..."); time.sleep(OLLAMA_RETRY_DELAY)
-            elif not ollama_success: logger.error(f"   ❌ Failed to generate prompt [{i+1}] after {OLLAMA_MAX_RETRIES} attempts. Last error: {last_error}"); generated_prompt_list.append({"index": i + 1, "background": background, "error": str(last_error)})
-    successful_count = sum(1 for p in generated_prompt_list if 'error' not in p); logger.info(f"✅ Finished generating {successful_count}/{num_prompts} prompts.")
+                            if prompt_text:
+                                logger.info(f"   ✅ Clean Prompt Extracted:\n      '{prompt_text}'")
+                                generated_prompt_list.append({
+                                    "index": i + 1, 
+                                    "run_theme": selected_location,  # 🔥 CONSISTENT THEME TRACKING
+                                    "run_attire": selected_attire,   # 🔥 CONSISTENT ATTIRE TRACKING
+                                    "dance_action": dance_action,
+                                    "camera_shot": camera_shot,
+                                    "lighting": lighting,
+                                    "generated_prompt": prompt_text
+                                })
+                                ollama_success = True
+                                break
+                            else:
+                                last_error = ValueError("Empty prompt string in JSON.")
+                        else:
+                            last_error = ValueError("Invalid JSON structure ('prompts' missing/empty).")
+                    else:
+                        last_error = ValueError("JSON brackets not found or invalid in Ollama response.")
+                except json.JSONDecodeError as json_e:
+                    last_error = json_e
+                    logger.warning(f"   ❌ Could not decode JSON from Ollama response (Attempt {attempt+1}): {json_e}")
+                    logger.debug(f"      Ollama raw response: {generated_text}")
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                logger.warning(f"   ❌ Error connecting to Ollama (Attempt {attempt+1}): {e}")
+            except Exception as e:
+                last_error = e
+                logger.warning(f"   ❌ Unexpected error processing Ollama (Attempt {attempt+1}): {e}")
+            
+            if not ollama_success and attempt < OLLAMA_MAX_RETRIES - 1:
+                logger.info(f"      Retrying Ollama in {OLLAMA_RETRY_DELAY}s...")
+                time.sleep(OLLAMA_RETRY_DELAY)
+            elif not ollama_success:
+                logger.error(f"   ❌ Failed to generate prompt [{i+1}] after {OLLAMA_MAX_RETRIES} attempts. Last error: {last_error}")
+                generated_prompt_list.append({
+                    "index": i + 1, 
+                    "run_theme": selected_location,
+                    "run_attire": selected_attire,
+                    "error": str(last_error)
+                })
+
+    successful_count = sum(1 for p in generated_prompt_list if 'error' not in p)
+    logger.info(f"✅ Finished generating {successful_count}/{num_prompts} prompts with CONSISTENT THEME + ATTIRE.")
     return generated_prompt_list
 
 # --- Prompt Logging ---
@@ -763,88 +970,171 @@ if __name__ == "__main__":
         polling_progress.close()
         logger.info(f"--- STAGE 1.5: Finished Polling Image Jobs ({completed_image_jobs_count}/{len(jobs_to_poll)} completed within timeout) ---")
 
-    # ========================================================
-    # 🔹 STAGE 1.7: Image Approval Step (Modified for Batches)
-    # ========================================================
-    logger.info(f"\n--- STAGE 1.7: Image Approval ---")
-    # Filter for jobs that completed and have at least one image path found
+    # ====================================================
+    # STAGE 1.7: Image Approval (Web UI & Telegram in Parallel)
+    # ====================================================
+    logger.info(f"\n--- STAGE 1.7: Image Approval (Web UI & Telegram) - Faceswap Version ---")
+
+    # Collect only those run_details that have at least one image path
     run_details_for_approval = [
         d for d in run_details
-        if d.get('image_job_status') in ('completed_all_files_found', 'completed_some_files_missing') and \
-           d.get('generated_image_paths') # Check if list is not empty
+        if d.get('image_job_status') in ('completed_all_files_found', 'completed_some_files_missing')
+        and d.get('generated_image_paths')
     ]
 
-    approved_image_details = [] # Will store list of dicts for approved images
-    if not run_details_for_approval:
-        logger.warning("No successfully generated images found to approve. Skipping video generation.")
-    elif not COMFYUI_OUTPUT_DIR_BASE.is_dir():
-        logger.error(f"ComfyUI Output Base Dir ({COMFYUI_OUTPUT_DIR_BASE}) not found. Cannot start approval server. Skipping approval.")
-    else:
-        logger.info(f"Found {len(run_details_for_approval)} original prompts resulting in images eligible for approval.")
-        approval_file_path = main_run_folder_path / APPROVAL_FILENAME
-        approved_images_folder_path = main_run_folder_path / APPROVED_IMAGES_SUBFOLDER
+    # Flatten all generated image paths (absolute) into a list for Telegram
+    all_generated_image_paths: list[str] = []
+    for item in run_details_for_approval:
+        for img_path in item['generated_image_paths']:
+            all_generated_image_paths.append(str(img_path))
+
+    # Prepare paths
+    approval_file_path = main_run_folder_path / APPROVAL_FILENAME
+    
+    if not approval_file_path.parent.exists():
+        approval_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Launch both UIs
+    def start_flask_approval():
+        shutdown_event = threading.Event()
         try:
-            approved_images_folder_path.mkdir(exist_ok=True)
-            logger.info(f"Created/ensured approved images folder: {approved_images_folder_path}")
-        except Exception as e:
-            logger.error(f"Failed to create approved images folder: {e}. Skipping approval.", exc_info=True)
-            run_details_for_approval = []
-
-        if run_details_for_approval:
-            shutdown_event = threading.Event()
-            approval_thread = threading.Thread(
-                target=run_approval_server,
-                args=(run_details_for_approval, COMFYUI_OUTPUT_DIR_BASE, approval_file_path, shutdown_event),
-                daemon=True
+            run_approval_server(
+                run_details_for_approval,
+                COMFYUI_OUTPUT_DIR_BASE,
+                approval_file_path,
+                shutdown_event
             )
+        except Exception as e:
+            logger.error(f"Flask approval server encountered an error: {e}", exc_info=True)
 
-            logger.info("Starting approval web server thread...")
-            approval_thread.start()
-            time.sleep(2) # Give server time to start
-            logger.info("="*60)
-            logger.info(f"➡️ Approval UI: http://localhost:{APPROVAL_SERVER_PORT}")
-            logger.info(f"➡️ Network URL: http://<YOUR_PC_IP_ADDRESS>:{APPROVAL_SERVER_PORT}")
-            logger.info("➡️ Select specific images and click 'Submit Approvals'.")
-            logger.info("➡️ Script will resume after submission.")
-            logger.info("="*60)
+    def start_telegram_approval():
+        # Clear any existing approval state files (but do not delete image files)
+        if TELEGRAM_APPROVALS_JSON.exists():
+            TELEGRAM_APPROVALS_JSON.unlink()
+        if TOKEN_MAP_JSON.exists():
+            TOKEN_MAP_JSON.unlink()
 
-            shutdown_event.wait() # Block until submission
-            logger.info("Approval server shutdown signal received. Processing approvals...")
+        # Ensure directory exists
+        if not TELEGRAM_APPROVALS_DIR.exists():
+            TELEGRAM_APPROVALS_DIR.mkdir(parents=True, exist_ok=True)
 
-            if approval_file_path.is_file():
-                try:
-                    with open(approval_file_path, 'r', encoding='utf-8') as f:
-                        approval_result = json.load(f)
-                        # Get the list of approved image dictionaries
-                        approved_image_details = approval_result.get("approved_images", [])
-                        logger.info(f"Successfully loaded {len(approved_image_details)} approved image details from {approval_file_path}")
-                except Exception as e:
-                    logger.error(f"Error reading approval file {approval_file_path}: {e}. Assuming no approvals.", exc_info=True)
-                    approved_image_details = []
-            else:
-                logger.warning(f"Approval file ({approval_file_path}) not found. Assuming no images were approved.")
-                approved_image_details = []
+        try:
+            subprocess.run(
+                [sys.executable, str(SEND_TELEGRAM_SCRIPT)] + all_generated_image_paths,
+                check=True
+            )
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Telegram approval process failed: {e}")
+        except Exception as e:
+            logger.error(f"Failed to start Telegram approval script: {e}", exc_info=True)
 
-            # Copy approved images to the dedicated folder
-            if approved_image_details:
-                logger.info("Copying approved images...")
-                copied_count = 0
-                for idx, approved_info in enumerate(approved_image_details):
-                    try:
-                        source_img_path = Path(approved_info['approved_image_path']) # Path was stored as string
-                        orig_idx = approved_info['original_index']
-                        batch_idx = approved_info['batch_image_index']
-                        # Create a clearer filename for the copy
-                        dest_filename = f"approved_{orig_idx:03d}_batch{batch_idx}_{source_img_path.name}"
-                        dest_img_path = approved_images_folder_path / dest_filename
-                        shutil.copyfile(source_img_path, dest_img_path)
-                        logger.info(f"  ({idx+1}/{len(approved_image_details)}) Copied '{source_img_path.name}' -> '{dest_img_path.name}'")
-                        copied_count += 1
-                    except Exception as e:
-                        logger.error(f"    Failed to copy approved image {idx+1} (Index {approved_info.get('original_index', 'N/A')}, Batch {approved_info.get('batch_image_index', 'N/A')}): {e}")
-                logger.info(f"Finished copying {copied_count}/{len(approved_image_details)} approved images.")
-            else:
-                 logger.info("No specific images were approved via the web UI.")
+    flask_thread = threading.Thread(target=start_flask_approval, daemon=True)
+    telegram_thread = threading.Thread(target=start_telegram_approval, daemon=True)
+    flask_thread.start()
+    telegram_thread.start()
+
+    print("=" * 100)
+    print(f"🎭 FACESWAP VERSION: Face-swapped images with dynamic prompts")
+    print("🟢 You can approve/reject images via browser (http://localhost:5005) OR on Telegram.")
+    print("   📝 IMPORTANT: Script will proceed to video generation after ALL images are reviewed on Telegram.")
+    print("   📝 OR submit your selections in the web browser to proceed immediately.")
+    print("=" * 100)
+
+    # Enhanced approval waiting - Wait for ALL images to be reviewed
+    approved_image_details: list[dict] = []
+    while True:
+        # Check Web UI approvals (Web UI automatically completes on submit)
+        if approval_file_path.exists():
+            try:
+                with open(approval_file_path, "r", encoding="utf-8") as f:
+                    approval_result = json.load(f)
+                    approved_image_details = approval_result.get("approved_images", [])
+                if approved_image_details:
+                    logger.info(f"[Main] Loaded {len(approved_image_details)} approved image details from Web UI.")
+                    print("[Main] Web UI approvals submitted, proceeding to video generation...")
+                    break
+            except Exception as e:
+                logger.error(f"Error reading web approval file {approval_file_path}: {e}")
+
+        # 🔥 Check Telegram approvals - Wait for ALL images to have status
+        if TELEGRAM_APPROVALS_JSON.exists():
+            try:
+                with open(TELEGRAM_APPROVALS_JSON, "r", encoding="utf-8") as f:
+                    telegram_result = json.load(f)
+                
+                # Check if ALL sent images have been reviewed (have status)
+                total_images_sent = len(all_generated_image_paths)
+                images_with_status = sum(1 for info in telegram_result.values() 
+                                       if isinstance(info, dict) and info.get("status") is not None)
+                
+                if images_with_status == total_images_sent and total_images_sent > 0:
+                    # All images reviewed! Count approvals and rejections
+                    approved_paths = [path for path, info in telegram_result.items() 
+                                    if isinstance(info, dict) and info.get("status") == "approve"]
+                    rejected_paths = [path for path, info in telegram_result.items() 
+                                    if isinstance(info, dict) and info.get("status") == "reject"]
+                    
+                    logger.info(f"[Main] All Telegram images reviewed! {len(approved_paths)} approved, {len(rejected_paths)} rejected")
+                    print(f"[Main] ✅ All Telegram images reviewed! {len(approved_paths)} approved, {len(rejected_paths)} rejected")
+                    
+                    # Build approved_image_details in the same format as Web UI
+                    temp_approved_list: list[dict] = []
+                    for img_path_str in approved_paths:
+                        img_path_obj = Path(img_path_str)
+                        # Find corresponding run_details entry
+                        for item in run_details_for_approval:
+                            if img_path_obj in item['generated_image_paths']:
+                                orig_index = item['index']
+                                batch_index = item['generated_image_paths'].index(img_path_obj)
+                                temp_approved_list.append({
+                                    "original_index": orig_index,
+                                    "batch_image_index": batch_index,
+                                    "approved_image_path": str(img_path_obj.resolve()),
+                                    "prompt": item['prompt'],
+                                    "face_filename": item['face_filename'],
+                                    "base_image_prefix": item['image_prefix']
+                                })
+                                break
+                    
+                    approved_image_details = temp_approved_list
+                    logger.info(f"[Main] Final result: {len(approved_image_details)} images approved for video generation.")
+                    print(f"[Main] Proceeding to video generation with {len(approved_image_details)} approved images...")
+                    break
+                else:
+                    # Still waiting for more reviews
+                    if total_images_sent > 0:
+                        logger.debug(f"[Main] Telegram progress: {images_with_status}/{total_images_sent} images reviewed")
+                        
+            except Exception as e:
+                logger.error(f"Error reading Telegram approval file {TELEGRAM_APPROVALS_JSON}: {e}")
+
+        time.sleep(2)
+
+    # Copy approved images to a dedicated folder
+    approved_images_folder_path = main_run_folder_path / APPROVED_IMAGES_SUBFOLDER
+    try:
+        approved_images_folder_path.mkdir(exist_ok=True)
+        logger.info(f"Created/ensured approved images folder: {approved_images_folder_path}")
+    except Exception as e:
+        logger.error(f"Failed to create approved images folder: {e}", exc_info=True)
+
+    copied_count = 0
+    for idx, approved_info in enumerate(approved_image_details):
+        try:
+            source_img_path = Path(approved_info['approved_image_path'])
+            orig_idx = approved_info['original_index']
+            batch_idx = approved_info['batch_image_index']
+            dest_filename = f"approved_{orig_idx:03d}_batch{batch_idx}_{source_img_path.name}"
+            dest_img_path = approved_images_folder_path / dest_filename
+            shutil.copyfile(source_img_path, dest_img_path)
+            logger.info(f"  ({idx+1}/{len(approved_image_details)}) Copied '{source_img_path.name}' -> '{dest_img_path.name}'")
+            copied_count += 1
+        except Exception as e:
+            logger.error(
+                f"    Failed to copy approved image {idx+1} (Index {approved_info.get('original_index', 'N/A')}, "
+                f"Batch {approved_info.get('batch_image_index', 'N/A')}): {e}"
+            )
+    logger.info(f"Finished copying {copied_count}/{len(approved_image_details)} approved images.")
 
     # ====================================================
     # 🔹 STAGE 2: Submit Video Generation Jobs (for approved images)

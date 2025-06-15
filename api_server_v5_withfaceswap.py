@@ -91,13 +91,40 @@ def find_node_id_by_title(workflow, title, wf_name="workflow"):
     logger.warning(f"Node not found by title '{title}' in {wf_name}.")
     return None
 
+# --- Helper Function (Random Face Selection) ---
+def get_random_face_from_source():
+    """Randomly selects a face file from the source_faces directory."""
+    try:
+        if not SOURCE_FACES_PATH_CONFIG.is_dir():
+            logger.warning(f"Source faces directory not found: {SOURCE_FACES_PATH_CONFIG}")
+            return None
+        
+        # Get all image files from source_faces directory
+        image_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.webp'}
+        face_files = [
+            f.name for f in SOURCE_FACES_PATH_CONFIG.iterdir() 
+            if f.is_file() and f.suffix.lower() in image_extensions
+        ]
+        
+        if not face_files:
+            logger.warning(f"No image files found in source_faces directory: {SOURCE_FACES_PATH_CONFIG}")
+            return None
+        
+        selected_face = random.choice(face_files)
+        logger.info(f"Randomly selected face: '{selected_face}' from {len(face_files)} available faces")
+        return selected_face
+        
+    except Exception as e:
+        logger.error(f"Error selecting random face: {e}")
+        return None
+
 # --- FastAPI App ---
 app = FastAPI(title="ComfyUI Generation API v5")
 
 # --- Request Model (Consistent with v4) ---
 class GenerationRequest(BaseModel):
     prompt: str
-    face: str | None = Field(None, description="Filename of the face image (e.g., 'face1.png') located in the source_faces directory.")
+    face: str | None = Field(None, description="Filename of the face image (e.g., 'face1.png') located in the source_faces directory. If not provided, a random face will be selected automatically.")
     output_subfolder: str = Field(..., description="Relative path within ComfyUI's output directory (e.g., 'Run_20231028_120000/all_images').")
     filename_prefix_text: str = Field(..., description="Prefix for the output filename (e.g., '001_swapped').")
     video_start_image_path: str | None = Field(None, description="Relative path for ComfyUI LoadImage node, inside ComfyUI's input dir (e.g., 'temp_video_starts/start_001.png').")
@@ -257,17 +284,30 @@ async def generate_image(request: GenerationRequest):
     """
     Triggers the ComfyUI image workflow.
     Requires prompt, output_subfolder, filename_prefix_text.
-    Optional: face (filename).
+    Optional: face (filename). If not provided, a random face will be selected.
     Ignores video_start_image_path.
     """
     client_id = str(uuid.uuid4())
     logger.info(f"\n--- [{client_id}] Received IMAGE request ---")
     logger.info(f"[{client_id}] Prompt: '{request.prompt[:80]}...'")
-    logger.info(f"[{client_id}] Face: '{request.face or 'None'}'")
+    logger.info(f"[{client_id}] Face (original): '{request.face or 'None'}'")
     logger.info(f"[{client_id}] Output Subfolder: '{request.output_subfolder}'")
     logger.info(f"[{client_id}] Filename Prefix: '{request.filename_prefix_text}'")
     if request.video_start_image_path:
         logger.warning(f"[{client_id}] `video_start_image_path` provided but will be ignored for image generation.")
+
+    # Handle face selection - use random selection if no face provided
+    selected_face = request.face
+    if not selected_face:
+        selected_face = get_random_face_from_source()
+        if selected_face:
+            logger.info(f"[{client_id}] No face specified, randomly selected: '{selected_face}'")
+        else:
+            logger.warning(f"[{client_id}] No face specified and random selection failed. Proceeding without face swap.")
+    
+    # Update the request object with the selected face
+    if selected_face:
+        request.face = selected_face
 
     # Check if face file exists locally *before* submitting to ComfyUI
     if request.face:
@@ -286,6 +326,10 @@ async def generate_image(request: GenerationRequest):
         # Return a 502 Bad Gateway, indicating this server failed to get a valid response from upstream (ComfyUI)
         raise HTTPException(status_code=502, detail={"message": "Failed to submit image job to ComfyUI", "details": result["error"], "status": result["status"]})
 
+    # Add selected face information to the result for tracking
+    result["selected_face"] = selected_face
+    logger.info(f"[{client_id}] Final selected face for tracking: '{selected_face or 'None'}'")
+
     return result
 
 @app.post("/generate_video", summary="Generate Video")
@@ -294,14 +338,28 @@ async def generate_video(request: GenerationRequest):
     Triggers the ComfyUI video workflow.
     Requires prompt, output_subfolder, filename_prefix_text.
     Optional: face (filename), video_start_image_path (relative path in ComfyUI input).
+    If no face is provided, a random face will be selected.
     """
     client_id = str(uuid.uuid4())
     logger.info(f"\n--- [{client_id}] Received VIDEO request ---")
     logger.info(f"[{client_id}] Prompt: '{request.prompt[:80]}...'")
-    logger.info(f"[{client_id}] Face: '{request.face or 'None'}'")
+    logger.info(f"[{client_id}] Face (original): '{request.face or 'None'}'")
     logger.info(f"[{client_id}] Output Subfolder: '{request.output_subfolder}'")
     logger.info(f"[{client_id}] Filename Prefix: '{request.filename_prefix_text}'")
     logger.info(f"[{client_id}] Video Start Image: '{request.video_start_image_path or 'Default (from workflow)'}'")
+
+    # Handle face selection - use random selection if no face provided
+    selected_face = request.face
+    if not selected_face:
+        selected_face = get_random_face_from_source()
+        if selected_face:
+            logger.info(f"[{client_id}] No face specified, randomly selected: '{selected_face}'")
+        else:
+            logger.warning(f"[{client_id}] No face specified and random selection failed. Proceeding without face swap.")
+    
+    # Update the request object with the selected face
+    if selected_face:
+        request.face = selected_face
 
     # Check face file existence
     if request.face:
@@ -320,6 +378,10 @@ async def generate_video(request: GenerationRequest):
     if result["status"] != "submitted":
         logger.error(f"[{client_id}] Failed to submit video job. Status: {result['status']}, Error: {result['error']}")
         raise HTTPException(status_code=502, detail={"message": "Failed to submit video job to ComfyUI", "details": result["error"], "status": result["status"]})
+
+    # Add selected face information to the result for tracking
+    result["selected_face"] = selected_face
+    logger.info(f"[{client_id}] Final selected face for tracking: '{selected_face or 'None'}'")
 
     return result
 
