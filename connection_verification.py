@@ -5,9 +5,19 @@ Simple debug test for Instagram connection
 
 import requests
 import json
+import os
+from dotenv import load_dotenv
 
-# Your credentials
-ACCESS_TOKEN = "EAAWEgplFszMBO302WnZClu7XP3YL0qZCXP9tJUqlEMA7A7hcqH2ntyipFEmO7v3VhKQvRU2PKbeeUSHt83GO8RABQLLZAkvo3zzOw2Ik5rcw2oobiaONdlGZBMjZB3LJZBWHXQM7ZAC05rpHBqYYo7SRe1rRZA42P5qVoos5uosZAcQbcRwBAnM9QXu4qZATnwnfTdxU4M5PCTAZBCifOXKGezaQIAyZBQtWcFoZD"
+# Load environment variables
+load_dotenv()
+
+# Get credentials from environment variables
+ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
+
+if not ACCESS_TOKEN:
+    print("ERROR: INSTAGRAM_ACCESS_TOKEN not found in .env file")
+    print("Please add INSTAGRAM_ACCESS_TOKEN=your_token_here to your .env file")
+    exit(1)
 
 def main():
     print("=" * 50)
@@ -109,13 +119,16 @@ def test_instagram(instagram_id):
 
 def save_config(instagram_id, page_id, page_name):
     """Save working configuration."""
+    app_id = os.getenv("INSTAGRAM_APP_ID")
+    app_secret = os.getenv("INSTAGRAM_APP_SECRET")
+    
     config = {
         "instagram_user_id": instagram_id,
         "page_id": page_id,
         "page_name": page_name,
         "access_token": ACCESS_TOKEN,
-        "app_id": "1553071335650099",
-        "app_secret": "5e5b9147aad3c348e1834c07d802d8d8",
+        "app_id": app_id,
+        "app_secret": app_secret,
         "api_version": "v18.0",
         "status": "ready_for_automation",
         "test_date": "2024-06-11"

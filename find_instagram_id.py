@@ -5,9 +5,21 @@ Find Instagram Business User ID from Facebook Pages
 
 import requests
 import json
+import os
+from dotenv import load_dotenv
 
-# Your credentials
-ACCESS_TOKEN = "EAAWEgplFszMBO302WnZClu7XP3YL0qZCXP9tJUqlEMA7A7hcqH2ntyipFEmO7v3VhKQvRU2PKbeeUSHt83GO8RABQLLZAkvo3zzOw2Ik5rcw2oobiaONdlGZBMjZB3LJZBWHXQM7ZAC05rpHBqYYo7SRe1rRZA42P5qVoos5uosZAcQbcRwBAnM9QXu4qZATnwnfTdxU4M5PCTAZBCifOXKGezaQIAyZBQtWcFoZD"
+# Load environment variables
+load_dotenv()
+
+# Get credentials from environment variables
+ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
+APP_ID = os.getenv("INSTAGRAM_APP_ID")
+APP_SECRET = os.getenv("INSTAGRAM_APP_SECRET")
+
+if not ACCESS_TOKEN:
+    print("ERROR: INSTAGRAM_ACCESS_TOKEN not found in .env file")
+    print("Please add INSTAGRAM_ACCESS_TOKEN=your_token_here to your .env file")
+    exit(1)
 
 def find_instagram_accounts():
     """Find all Instagram accounts connected to your Facebook pages."""
@@ -159,8 +171,8 @@ def main():
                 "access_token": ACCESS_TOKEN,
                 "instagram_user_id": instagram_id,
                 "page_id": account['page_id'],
-                "app_id": "1553071335650099",
-                "app_secret": "5e5b9147aad3c348e1834c07d802d8d8",
+                "app_id": APP_ID,
+                "app_secret": APP_SECRET,
                 "api_version": "v18.0",
                 "page_name": page_name,
                 "setup_date": "2024-06-11"

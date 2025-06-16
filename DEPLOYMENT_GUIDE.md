@@ -358,6 +358,8 @@ INSTAGRAM_ACCESS_TOKEN=your_instagram_access_token
 INSTAGRAM_USER_ID=your_instagram_user_id
 INSTAGRAM_APP_ID=your_meta_app_id
 INSTAGRAM_APP_SECRET=your_meta_app_secret
+INSTAGRAM_PAGE_ID=your_facebook_page_id
+INSTAGRAM_USERNAME=your_instagram_username
 
 # === EXTERNAL AI APIS (OPTIONAL) ===
 OPENAI_API_KEY=sk-your_openai_key_here

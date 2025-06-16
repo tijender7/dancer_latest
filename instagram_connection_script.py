@@ -8,14 +8,35 @@ import requests
 import json
 import time
 import webbrowser
+import os
 from pathlib import Path
 from datetime import datetime
+from dotenv import load_dotenv
 
-# Your credentials with full permissions
-ACCESS_TOKEN = "EAAWEgplFszMBOZCjDSZAqfp9LRnsn1VwFZCl3xQ5ZAEN9VBJdy90OeN1l09oZC3Ns0p10lR3mJJZClm8P2FO8g7Ui6CQS4ISvVB1ZB8UUZAtgOdsxz1LGlSLQdDEeB24IIHJsQnOOdvpIOwiGIlNjriZC13od7cLMpZBweMBdi7Jp8RxOr9wWBiTX81ZBrnTL4sUAt1EnJ888DAP7037YEyeKP8iEAZD"
-APP_ID = "1553071335650099"
-PAGE_ID = "613520515187742"  # Dance Content Creator AI
-INSTAGRAM_USERNAME = "hot_reels_x0x0"  # From your screenshot
+# Load environment variables
+load_dotenv()
+
+# Get credentials from environment variables
+ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
+APP_ID = os.getenv("INSTAGRAM_APP_ID")
+PAGE_ID = os.getenv("INSTAGRAM_PAGE_ID")  
+INSTAGRAM_USERNAME = os.getenv("INSTAGRAM_USERNAME")
+
+# Validate required environment variables
+required_vars = {
+    "INSTAGRAM_ACCESS_TOKEN": ACCESS_TOKEN,
+    "INSTAGRAM_APP_ID": APP_ID,
+    "INSTAGRAM_PAGE_ID": PAGE_ID,
+    "INSTAGRAM_USERNAME": INSTAGRAM_USERNAME
+}
+
+missing_vars = [var_name for var_name, var_value in required_vars.items() if not var_value]
+if missing_vars:
+    print("ERROR: Missing required environment variables:")
+    for var in missing_vars:
+        print(f"  - {var}")
+    print("\nPlease add these to your .env file")
+    exit(1)
 
 class InstagramBusinessConnector:
     """Automated Instagram Business account connector."""
@@ -247,7 +268,7 @@ class InstagramBusinessConnector:
         print("4. Grant all permissions")
         print()
         print("OR via Facebook:")
-        print("1. Go to facebook.com/613520515187742")
+        print(f"1. Go to facebook.com/{PAGE_ID}")
         print("2. Settings → Instagram → Connect Account")
         print("3. Login with @hot_reels_x0x0")
         

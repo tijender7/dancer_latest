@@ -6,11 +6,31 @@ Fix access token permissions for Instagram Graph API
 import requests
 import json
 import webbrowser
+import os
+from dotenv import load_dotenv
 
-# Your app credentials
-APP_ID = "1553071335650099"
-APP_SECRET = "5e5b9147aad3c348e1834c07d802d8d8"
-CURRENT_TOKEN = "EAAWEgplFszMBO302WnZClu7XP3YL0qZCXP9tJUqlEMA7A7hcqH2ntyipFEmO7v3VhKQvRU2PKbeeUSHt83GO8RABQLLZAkvo3zzOw2Ik5rcw2oobiaONdlGZBMjZB3LJZBWHXQM7ZAC05rpHBqYYo7SRe1rRZA42P5qVoos5uosZAcQbcRwBAnM9QXu4qZATnwnfTdxU4M5PCTAZBCifOXKGezaQIAyZBQtWcFoZD"
+# Load environment variables
+load_dotenv()
+
+# Get credentials from environment variables
+APP_ID = os.getenv("INSTAGRAM_APP_ID")
+APP_SECRET = os.getenv("INSTAGRAM_APP_SECRET")
+CURRENT_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
+
+# Validate required environment variables
+required_vars = {
+    "INSTAGRAM_APP_ID": APP_ID,
+    "INSTAGRAM_APP_SECRET": APP_SECRET,
+    "INSTAGRAM_ACCESS_TOKEN": CURRENT_TOKEN
+}
+
+missing_vars = [var_name for var_name, var_value in required_vars.items() if not var_value]
+if missing_vars:
+    print("ERROR: Missing required environment variables:")
+    for var in missing_vars:
+        print(f"  - {var}")
+    print("\nPlease add these to your .env file")
+    exit(1)
 
 def check_current_permissions():
     """Check what permissions the current token has."""
