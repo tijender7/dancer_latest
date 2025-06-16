@@ -225,29 +225,182 @@ The workflow JSON files must contain specific node titles:
 
 ## External Services Setup
 
-### 1. Telegram Bot Setup
-```bash
-# 1. Create bot with @BotFather on Telegram
-# 2. Get bot token
-# 3. Get your chat ID by messaging the bot and calling:
-curl https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
-```
+### Required API Keys and Services
 
-### 2. YouTube API Setup
-```bash
-# 1. Go to console.cloud.google.com
-# 2. Create new project or select existing
-# 3. Enable YouTube Data API v3
-# 4. Create OAuth 2.0 credentials
-# 5. Download client_secret.json to project directory
-```
+The pipeline requires several external API keys and services. Follow these detailed steps to obtain and configure each one:
 
-### 3. Google OAuth Setup
+### 1. Telegram Bot API Setup (Required for Mobile Approval)
+
+#### Step 1: Create a Telegram Bot
+1. Open Telegram and search for `@BotFather`
+2. Start a chat with BotFather
+3. Send `/newbot` command
+4. Choose a name for your bot (e.g., "Dancer Content Approval Bot")
+5. Choose a unique username ending with "bot" (e.g., "dancer_approval_bot")
+6. **Save the Bot Token** - You'll receive something like: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`
+
+#### Step 2: Get Your Chat ID
+1. Send a message to your newly created bot
+2. Visit: `https://api.telegram.org/bot<YourBOTToken>/getUpdates`
+3. Replace `<YourBOTToken>` with your actual bot token
+4. Look for `"chat":{"id":` in the response
+5. **Save the Chat ID** - It will be a number like: `123456789`
+
+#### Step 3: Configure Bot Permissions
+1. In BotFather, send `/setprivacy`
+2. Select your bot
+3. Choose "Disable" to allow the bot to read all messages
+4. Send `/setcommands` to set up bot commands:
+   ```
+   approve - Approve the current image
+   reject - Reject the current image
+   status - Check approval status
+   help - Show available commands
+   ```
+
+### 2. Google APIs Setup (Required for YouTube Upload)
+
+#### Step 1: Create Google Cloud Project
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Click "Create Project" or select existing project
+3. Name your project (e.g., "Dancer Content Pipeline")
+4. Note your **Project ID**
+
+#### Step 2: Enable Required APIs
+1. Go to "APIs & Services" > "Library"
+2. Enable the following APIs:
+   - **YouTube Data API v3**
+   - **Google Drive API** (for backup storage)
+   - **Google Sheets API** (for analytics tracking)
+
+#### Step 3: Create OAuth 2.0 Credentials
+1. Go to "APIs & Services" > "Credentials"
+2. Click "+ CREATE CREDENTIALS" > "OAuth client ID"
+3. Choose "Desktop application"
+4. Name it "Dancer Pipeline Client"
+5. **Download the JSON file** and rename it to `client_secret.json`
+6. Place this file in your project root directory
+
+#### Step 4: Set up OAuth Consent Screen
+1. Go to "APIs & Services" > "OAuth consent screen"
+2. Choose "External" user type
+3. Fill in required fields:
+   - App name: "Dancer Content Pipeline"
+   - User support email: your email
+   - Developer contact: your email
+4. Add scopes:
+   - `https://www.googleapis.com/auth/youtube.upload`
+   - `https://www.googleapis.com/auth/drive.file`
+
+#### Step 5: Run Google OAuth Setup
 ```bash
 # Run authentication script
 python autenticate_google.py
 # Follow browser prompts to authorize
 # This creates token.json and youtube_token.pickle
+```
+
+### 3. Instagram Integration Setup (Optional)
+
+#### Step 1: Create Meta Developer Account
+1. Go to [Meta for Developers](https://developers.facebook.com/)
+2. Log in with your Facebook account
+3. Click "Get Started" and complete verification
+
+#### Step 2: Create App
+1. Click "Create App"
+2. Choose "Consumer" app type
+3. Enter app details:
+   - App Name: "Dancer Content Pipeline"
+   - Contact Email: your email
+
+#### Step 3: Add Instagram Basic Display
+1. In your app dashboard, click "Add Product"
+2. Find "Instagram Basic Display" and click "Set Up"
+3. Go to "Basic Display" > "Roles" > "Roles"
+4. Add Instagram Testers (your Instagram account)
+
+#### Step 4: Get Access Tokens
+1. Generate User Token through Instagram Basic Display
+2. **Save the Access Token** and **User ID**
+
+### 4. AI Model APIs (Optional - for External LLMs)
+
+#### OpenAI API (if using GPT models)
+1. Go to [OpenAI Platform](https://platform.openai.com/)
+2. Create account and verify phone number
+3. Go to "API Keys" section
+4. Click "Create new secret key"
+5. **Save the API Key** - starts with `sk-`
+
+#### Anthropic API (if using Claude models)
+1. Go to [Anthropic Console](https://console.anthropic.com/)
+2. Create account and complete verification
+3. Go to "API Keys" section
+4. Click "Create Key"
+5. **Save the API Key** - starts with `sk-ant-`
+
+### 5. Environment Variables Configuration
+
+**Create `.env` file in project root:**
+```env
+# === TELEGRAM CONFIGURATION (REQUIRED) ===
+TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+TELEGRAM_CHAT_ID=123456789
+
+# === GOOGLE APIS (REQUIRED FOR YOUTUBE) ===
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_PROJECT_ID=your-project-id
+
+# === INSTAGRAM (OPTIONAL) ===
+INSTAGRAM_ACCESS_TOKEN=your_instagram_access_token
+INSTAGRAM_USER_ID=your_instagram_user_id
+INSTAGRAM_APP_ID=your_meta_app_id
+INSTAGRAM_APP_SECRET=your_meta_app_secret
+
+# === EXTERNAL AI APIS (OPTIONAL) ===
+OPENAI_API_KEY=sk-your_openai_key_here
+ANTHROPIC_API_KEY=sk-ant-your_anthropic_key_here
+
+# === PIPELINE CONFIGURATION ===
+PIPELINE_MODE=production
+LOG_LEVEL=INFO
+MAX_CONCURRENT_JOBS=3
+AUTO_CLEANUP=true
+```
+
+### 6. API Connection Testing
+
+**Test all API connections:**
+```bash
+# Test Telegram Bot
+python -c "
+import os
+from dotenv import load_dotenv
+import requests
+load_dotenv()
+token = os.getenv('TELEGRAM_BOT_TOKEN')
+if token:
+    resp = requests.get(f'https://api.telegram.org/bot{token}/getMe')
+    print('Telegram bot test:', resp.json())
+else:
+    print('TELEGRAM_BOT_TOKEN not found in .env')
+"
+
+# Test Google APIs (after OAuth setup)
+python -c "
+import os
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+print('Google API libraries available')
+"
+
+# Test Ollama
+curl http://localhost:11434/api/generate -d '{"model":"gemma2:12b","prompt":"test"}'
+
+# Test ComfyUI
+curl http://localhost:8188/system_stats
 ```
 
 ## Installation Steps
