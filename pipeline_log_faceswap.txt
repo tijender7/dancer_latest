@@ -1,0 +1,148 @@
+[2025-06-15 22:40:36] [INFO] ================================================================================
+[2025-06-15 22:40:36] [INFO] [MOVIE] STARTING COMPLETE FACESWAP DANCER CONTENT PIPELINE
+[2025-06-15 22:40:36] [INFO] [ART] Features: Dynamic Prompts + Random Face Selection + Telegram Approval
+[2025-06-15 22:40:36] [INFO] [MEMO] Excluded: Reels generation and YouTube upload (as requested)
+[2025-06-15 22:40:36] [INFO] ================================================================================
+[2025-06-15 22:40:36] [INFO] [ROCKET] Starting Faceswap API server in background...
+[2025-06-15 22:40:36] [INFO]    API server PID: 25532
+[2025-06-15 22:40:36] [INFO]    Waiting for API server to initialize...
+[2025-06-15 22:40:44] [INFO] [OK] Faceswap API server started successfully
+[2025-06-15 22:40:44] [INFO] [ART] Step 1: Faceswap Content Generation (with dynamic prompts and Telegram approval)
+[2025-06-15 22:40:44] [INFO] [ROCKET] Starting Step: Faceswap Content Generation
+[2025-06-15 22:40:44] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_with_faceswap.py
+[2025-06-15 22:53:01] [INFO] [STOP] Stopping API server...
+[2025-06-15 22:53:01] [INFO] [OK] API server stopped gracefully
+[2025-06-15 22:54:25] [INFO] ================================================================================
+[2025-06-15 22:54:25] [INFO] [MOVIE] STARTING COMPLETE FACESWAP DANCER CONTENT PIPELINE
+[2025-06-15 22:54:25] [INFO] [ART] Features: Dynamic Prompts + Random Face Selection + Telegram Approval
+[2025-06-15 22:54:25] [INFO] [MEMO] Excluded: Reels generation and YouTube upload (as requested)
+[2025-06-15 22:54:25] [INFO] ================================================================================
+[2025-06-15 22:54:25] [INFO] [ROCKET] Starting Faceswap API server in background...
+[2025-06-15 22:54:25] [INFO]    API server PID: 27328
+[2025-06-15 22:54:25] [INFO]    Waiting for API server to initialize...
+[2025-06-15 22:54:33] [INFO] [OK] Faceswap API server started successfully
+[2025-06-15 22:54:33] [INFO] [ART] Step 1: Faceswap Content Generation (with dynamic prompts and Telegram approval)
+[2025-06-15 22:54:33] [INFO] [ROCKET] Starting Step: Faceswap Content Generation
+[2025-06-15 22:54:33] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_with_faceswap.py
+[2025-06-15 23:00:08] [INFO] [STOP] Stopping API server...
+[2025-06-15 23:00:08] [INFO] [OK] API server stopped gracefully
+[2025-06-15 23:00:31] [INFO] ================================================================================
+[2025-06-15 23:00:31] [INFO] [MOVIE] STARTING COMPLETE FACESWAP DANCER CONTENT PIPELINE
+[2025-06-15 23:00:31] [INFO] [ART] Features: Dynamic Prompts + Random Face Selection + Telegram Approval
+[2025-06-15 23:00:31] [INFO] [MEMO] Excluded: Reels generation and YouTube upload (as requested)
+[2025-06-15 23:00:31] [INFO] ================================================================================
+[2025-06-15 23:00:31] [INFO] [ROCKET] Starting Faceswap API server in background...
+[2025-06-15 23:00:31] [INFO]    API server PID: 30920
+[2025-06-15 23:00:31] [INFO]    Waiting for API server to initialize...
+[2025-06-15 23:00:39] [INFO] [OK] Faceswap API server started successfully
+[2025-06-15 23:00:39] [INFO] [ART] Step 1: Faceswap Content Generation (with dynamic prompts and Telegram approval)
+[2025-06-15 23:00:39] [INFO] [ROCKET] Starting Step: Faceswap Content Generation
+[2025-06-15 23:00:39] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_with_faceswap.py
+[2025-06-15 23:01:28] [INFO] [STOP] Stopping API server...
+[2025-06-15 23:01:28] [INFO] [OK] API server stopped gracefully
+[2025-06-16 07:22:31] [INFO] ================================================================================
+[2025-06-16 07:22:31] [INFO] [MOVIE] STARTING COMPLETE FACESWAP DANCER CONTENT PIPELINE
+[2025-06-16 07:22:31] [INFO] [ART] Features: Dynamic Prompts + Random Face Selection + Telegram Approval
+[2025-06-16 07:22:31] [INFO] [MEMO] Excluded: Reels generation and YouTube upload (as requested)
+[2025-06-16 07:22:31] [INFO] ================================================================================
+[2025-06-16 07:22:31] [INFO] [ROCKET] Starting Faceswap API server in background...
+[2025-06-16 07:22:31] [INFO]    API server PID: 39984
+[2025-06-16 07:22:31] [INFO]    Waiting for API server to initialize...
+[2025-06-16 07:22:39] [INFO] [OK] Faceswap API server started successfully
+[2025-06-16 07:22:39] [INFO] [ART] Step 1: Faceswap Content Generation (with dynamic prompts and Telegram approval)
+[2025-06-16 07:22:39] [INFO] [ROCKET] Starting Step: Faceswap Content Generation
+[2025-06-16 07:22:39] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_with_faceswap.py
+[2025-06-16 12:16:27] [INFO] [OK] COMPLETED: Faceswap Content Generation
+[2025-06-16 12:16:30] [INFO] [SYNC] Step 2: Beat Synchronization
+[2025-06-16 12:16:30] [INFO] [ROCKET] Starting Step: Beat Synchronization
+[2025-06-16 12:16:30] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\beat_sync_single.py
+[2025-06-16 12:21:44] [INFO] [OK] COMPLETED: Beat Synchronization
+[2025-06-16 12:21:47] [INFO] [FAST] Step 3: 4K Upscaling
+[2025-06-16 12:21:47] [INFO] [ROCKET] Starting Step: 4K Upscaling
+[2025-06-16 12:21:47] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\upscale_4k_parallel.py
+[2025-06-16 13:15:56] [INFO] [OK] COMPLETED: 4K Upscaling
+[2025-06-16 13:15:59] [INFO] [MEMO] Step 4: Viral Metadata Generation (Optional)
+[2025-06-16 13:15:59] [INFO] [ROCKET] Starting Step: Viral Metadata Generation
+[2025-06-16 13:15:59] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\youtube_metadata_generator.py
+[2025-06-16 13:15:59] [ERROR] [ERROR] FAILED: Viral Metadata Generation
+[2025-06-16 13:15:59] [ERROR]    Exit code: 1
+[2025-06-16 13:15:59] [WARN] [WARN] Continuing despite optional step failure
+[2025-06-16 13:16:02] [INFO] [OK] Faceswap pipeline completed successfully!
+[2025-06-16 13:16:02] [INFO] [MEMO] Note: Reels generation and YouTube upload were skipped as requested
+[2025-06-16 13:16:02] [INFO] [STOP] Stopping API server...
+[2025-06-16 13:16:02] [INFO] [OK] API server stopped gracefully
+[2025-06-16 13:16:02] [INFO] ================================================================================
+[2025-06-16 13:16:02] [INFO] [CHART] FACESWAP PIPELINE EXECUTION SUMMARY
+[2025-06-16 13:16:02] [INFO] ================================================================================
+[2025-06-16 13:16:02] [INFO] [CLOCK] Start Time: 2025-06-16 07:22:31
+[2025-06-16 13:16:02] [INFO] [CLOCK] End Time: 2025-06-16 13:16:02
+[2025-06-16 13:16:02] [INFO] [TIMER] Total Duration: 5:53:31
+[2025-06-16 13:16:02] [INFO] 
+[2025-06-16 13:16:02] [INFO] [OK] Completed Steps (3):
+[2025-06-16 13:16:02] [INFO]    [OK] Faceswap Content Generation
+[2025-06-16 13:16:02] [INFO]    [OK] Beat Synchronization
+[2025-06-16 13:16:02] [INFO]    [OK] 4K Upscaling
+[2025-06-16 13:16:02] [INFO] [ERROR] Failed Steps (1):
+[2025-06-16 13:16:02] [INFO]    [ERROR] Viral Metadata Generation
+[2025-06-16 13:16:02] [INFO] 
+[2025-06-16 13:16:02] [INFO] [WARN] FACESWAP PIPELINE PARTIALLY COMPLETED
+[2025-06-16 13:16:02] [INFO]    Core content generated but some final steps failed
+[2025-06-16 13:16:02] [INFO] ================================================================================
+[2025-06-17 14:03:11] [INFO] ================================================================================
+[2025-06-17 14:03:11] [INFO] [MOVIE] STARTING COMPLETE FACESWAP DANCER CONTENT PIPELINE
+[2025-06-17 14:03:11] [INFO] [ART] Features: Dynamic Prompts + Random Face Selection + Telegram Approval
+[2025-06-17 14:03:11] [INFO] [MEMO] Excluded: Reels generation and YouTube upload (as requested)
+[2025-06-17 14:03:11] [INFO] ================================================================================
+[2025-06-17 14:03:11] [INFO] [ROCKET] Starting Faceswap API server in background...
+[2025-06-17 14:03:11] [INFO]    API server PID: 9204
+[2025-06-17 14:03:11] [INFO]    Waiting for API server to initialize...
+[2025-06-17 14:03:19] [INFO] [OK] Faceswap API server started successfully
+[2025-06-17 14:03:19] [INFO] [ART] Step 1: Faceswap Content Generation (with dynamic prompts and Telegram approval)
+[2025-06-17 14:03:19] [INFO] [ROCKET] Starting Step: Faceswap Content Generation
+[2025-06-17 14:03:19] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_with_faceswap.py
+[2025-06-17 14:11:55] [INFO] [STOP] Stopping API server...
+[2025-06-17 14:11:55] [INFO] [OK] API server stopped gracefully
+[2025-06-17 14:14:19] [INFO] ================================================================================
+[2025-06-17 14:14:19] [INFO] [MOVIE] STARTING COMPLETE FACESWAP DANCER CONTENT PIPELINE
+[2025-06-17 14:14:19] [INFO] [ART] Features: Dynamic Prompts + Random Face Selection + Telegram Approval
+[2025-06-17 14:14:19] [INFO] [MEMO] Excluded: Reels generation and YouTube upload (as requested)
+[2025-06-17 14:14:19] [INFO] ================================================================================
+[2025-06-17 14:14:19] [INFO] [ROCKET] Starting Faceswap API server in background...
+[2025-06-17 14:14:19] [INFO]    API server PID: 14932
+[2025-06-17 14:14:19] [INFO]    Waiting for API server to initialize...
+[2025-06-17 14:14:27] [INFO] [OK] Faceswap API server started successfully
+[2025-06-17 14:14:27] [INFO] [ART] Step 1: Faceswap Content Generation (with dynamic prompts and Telegram approval)
+[2025-06-17 14:14:27] [INFO] [ROCKET] Starting Step: Faceswap Content Generation
+[2025-06-17 14:14:27] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_with_faceswap.py
+[2025-06-17 14:30:00] [INFO] [STOP] Stopping API server...
+[2025-06-17 14:30:00] [INFO] [OK] API server stopped gracefully
+[2025-06-17 14:53:23] [INFO] ================================================================================
+[2025-06-17 14:53:23] [INFO] [MOVIE] STARTING COMPLETE FACESWAP DANCER CONTENT PIPELINE
+[2025-06-17 14:53:23] [INFO] [ART] Features: Dynamic Prompts + Random Face Selection + Telegram Approval
+[2025-06-17 14:53:23] [INFO] [MEMO] Excluded: Reels generation and YouTube upload (as requested)
+[2025-06-17 14:53:23] [INFO] ================================================================================
+[2025-06-17 14:53:23] [INFO] [ROCKET] Starting Faceswap API server in background...
+[2025-06-17 14:53:23] [INFO]    API server PID: 18956
+[2025-06-17 14:53:23] [INFO]    Waiting for API server to initialize...
+[2025-06-17 14:53:31] [INFO] [OK] Faceswap API server started successfully
+[2025-06-17 14:53:31] [INFO] [ART] Step 1: Faceswap Content Generation (with dynamic prompts and Telegram approval)
+[2025-06-17 14:53:31] [INFO] [ROCKET] Starting Step: Faceswap Content Generation
+[2025-06-17 14:53:31] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_with_faceswap.py
+[2025-06-17 15:27:20] [INFO] [OK] COMPLETED: Faceswap Content Generation
+[2025-06-17 15:27:23] [INFO] [SYNC] Step 2: Beat Synchronization
+[2025-06-17 15:27:23] [INFO] [ROCKET] Starting Step: Beat Synchronization
+[2025-06-17 15:27:23] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\beat_sync_single.py
+[2025-06-17 15:27:37] [INFO] [STOP] Stopping API server...
+[2025-06-17 15:27:37] [INFO] [OK] API server stopped gracefully
+[2025-06-18 16:22:22] [INFO] ================================================================================
+[2025-06-18 16:22:22] [INFO] [MOVIE] STARTING COMPLETE FACESWAP DANCER CONTENT PIPELINE
+[2025-06-18 16:22:22] [INFO] [ART] Features: Dynamic Prompts + Random Face Selection + Telegram Approval
+[2025-06-18 16:22:22] [INFO] [MEMO] Excluded: Reels generation and YouTube upload (as requested)
+[2025-06-18 16:22:22] [INFO] ================================================================================
+[2025-06-18 16:22:22] [INFO] [ROCKET] Starting Faceswap API server in background...
+[2025-06-18 16:22:22] [INFO]    API server PID: 4256
+[2025-06-18 16:22:22] [INFO]    Waiting for API server to initialize...
+[2025-06-18 16:22:30] [INFO] [OK] Faceswap API server started successfully
+[2025-06-18 16:22:30] [INFO] [ART] Step 1: Faceswap Content Generation (with dynamic prompts and Telegram approval)
+[2025-06-18 16:22:30] [INFO] [ROCKET] Starting Step: Faceswap Content Generation
+[2025-06-18 16:22:30] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_with_faceswap.py

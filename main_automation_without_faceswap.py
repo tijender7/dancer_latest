@@ -270,8 +270,18 @@ def generate_prompts_ollama(model, num_prompts, ollama_api_url):
     logger.info(f"🚀 Generating {num_prompts} prompts with ONE CONSISTENT THEME + ATTIRE (Model: {model})...")
     
     # 🔥 STEP 1: SELECT ONE THEME AND ONE ATTIRE FOR THE ENTIRE RUN!
-    selected_location = random.choice(PROMPT_ELEMENTS["locations"])
-    selected_attire = random.choice(PROMPT_ELEMENTS["attires"])
+    # Use SystemRandom for cryptographically secure random selection and shuffle lists first
+    secure_random = random.SystemRandom()
+    
+    # Create shuffled copies of the lists to avoid positional bias
+    shuffled_locations = PROMPT_ELEMENTS["locations"].copy()
+    shuffled_attires = PROMPT_ELEMENTS["attires"].copy()
+    secure_random.shuffle(shuffled_locations)
+    secure_random.shuffle(shuffled_attires)
+    
+    # Now select from the shuffled lists
+    selected_location = secure_random.choice(shuffled_locations)
+    selected_attire = secure_random.choice(shuffled_attires)
     
     # 🔥 LOG THE SELECTED THEME AND ATTIRE PROMINENTLY
     logger.info("=" * 100)
@@ -280,6 +290,11 @@ def generate_prompts_ollama(model, num_prompts, ollama_api_url):
     logger.info("=" * 100)
     logger.info(f"👗 SELECTED ATTIRE FOR THIS ENTIRE RUN:")
     logger.info(f"    OUTFIT: {selected_attire}")
+    logger.info("=" * 100)
+    logger.info(f"📊 SELECTION STATS:")
+    logger.info(f"    Total available locations: {len(PROMPT_ELEMENTS['locations'])}")
+    logger.info(f"    Total available attires: {len(PROMPT_ELEMENTS['attires'])}")
+    logger.info(f"    Using cryptographically secure random selection with shuffle")
     logger.info("=" * 100)
     
     print("=" * 100)
@@ -297,9 +312,9 @@ def generate_prompts_ollama(model, num_prompts, ollama_api_url):
         attire = selected_attire      # FIXED ATTIRE - NO RANDOM SELECTION HERE!
         
         # 🔥 STEP 3: VARY OTHER ELEMENTS FOR DIVERSITY WITHIN THE SAME THEME + ATTIRE
-        dance_action = random.choice(PROMPT_ELEMENTS["dance_actions"])
-        camera_shot = random.choice(PROMPT_ELEMENTS["camera_shots"])
-        lighting = random.choice(PROMPT_ELEMENTS["lighting"])
+        dance_action = secure_random.choice(PROMPT_ELEMENTS["dance_actions"])
+        camera_shot = secure_random.choice(PROMPT_ELEMENTS["camera_shots"])
+        lighting = secure_random.choice(PROMPT_ELEMENTS["lighting"])
 
         # Create a rich, detailed description for Ollama to synthesize
         dynamic_scene_description = (

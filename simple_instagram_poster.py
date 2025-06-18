@@ -76,9 +76,9 @@ def add_to_posted_log(video_path: Path):
         json.dump(posted_list, f, indent=4)
     # No print statement here, we will summarize at the end.
 
-def find_all_unposted_reels():
+def find_all_unposted_upscaled_videos():
     """
-    Finds ALL Reels videos that have not yet been posted.
+    Finds ALL upscaled videos that have not yet been posted.
     Returns a list of Path objects.
     """
     print("INFO: Searching for the latest 'Run_*' folder...")
@@ -92,24 +92,28 @@ def find_all_unposted_reels():
             print("ERROR: No 'Run_*' folders found.")
             return []
         latest_run_folder = run_folders[0]
+        print(f"INFO: Using latest run folder: {latest_run_folder.name}")
     except Exception as e:
         print(f"ERROR: Could not find latest run folder: {e}")
         return []
 
-    reels_dir = latest_run_folder / UPSCALED_SUBFOLDER / COMPILED_SUBFOLDER / REELS_SUBFOLDER
-    if not reels_dir.is_dir():
-        print(f"ERROR: Reels directory not found at: {reels_dir}")
+    upscaled_dir = latest_run_folder / UPSCALED_SUBFOLDER / COMPILED_SUBFOLDER
+    if not upscaled_dir.is_dir():
+        print(f"ERROR: Upscaled directory not found at: {upscaled_dir}")
         return []
 
-    print(f"INFO: Scanning for unposted videos in: {reels_dir}")
+    print(f"INFO: Scanning for unposted upscaled videos in: {upscaled_dir}")
     posted_videos = get_posted_videos()
-    all_reels = sorted(reels_dir.glob("*_reels.mp4"), key=lambda p: p.stat().st_ctime)
+    all_upscaled = sorted(upscaled_dir.glob("*_upscaled.mp4"), key=lambda p: p.stat().st_ctime)
     
-    unposted_reels = [
-        reel_path for reel_path in all_reels if reel_path.name not in posted_videos
+    print(f"INFO: Found {len(all_upscaled)} upscaled videos total")
+    
+    unposted_videos = [
+        video_path for video_path in all_upscaled if video_path.name not in posted_videos
     ]
     
-    return unposted_reels
+    print(f"INFO: Found {len(unposted_videos)} unposted upscaled videos")
+    return unposted_videos
 
 # ==============================================================================
 #  MAIN SCRIPT LOGIC
@@ -135,14 +139,14 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Step 2: Find all videos to post
-    videos_to_post = find_all_unposted_reels()
+    videos_to_post = find_all_unposted_upscaled_videos()
 
     if not videos_to_post:
         print("\n✨ All videos are already posted. Nothing to do.")
         sys.exit(0)
 
     total_videos = len(videos_to_post)
-    print(f"\n▶️ Found {total_videos} new Reels to upload.")
+    print(f"\n▶️ Found {total_videos} new upscaled videos to upload.")
     
     successful_uploads = 0
     failed_uploads = 0

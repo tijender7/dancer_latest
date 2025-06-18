@@ -48,7 +48,7 @@ METADATA_GENERATOR_SCRIPT = ROOT / "youtube_metadata_generator.py"
 YOUTUBE_UPLOADER_SCRIPT = ROOT / "youtube_shorts_poster.py"
 
 # === CONFIGURATION ===
-ENABLE_AUTO_UPLOAD = True  # Set to False to stop before YouTube upload
+ENABLE_AUTO_UPLOAD = False  # Set to False to stop before YouTube upload
 ENABLE_METADATA_GENERATION = True  # Set to False to skip AI metadata generation
 DELAY_BETWEEN_STEPS = 3  # Seconds to wait between major steps
 LOG_FILE = ROOT / "pipeline_log.txt"
