@@ -1,0 +1,10 @@
+{
+    "ollama_model": "gemma3:12b",
+    "num_prompts": 1,
+    "comfyui_api_url": "http://127.0.0.1:8188/prompt",
+    "base_workflow_image": "base_workflows/dancer_image_simple.json",
+    "base_workflow_video": "base_workflows/dancer_video_simple.json",
+    "source_faces_path": "source_faces",
+    "output_folder": "output"
+  }
+  
