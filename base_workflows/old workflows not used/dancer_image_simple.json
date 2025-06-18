@@ -1,0 +1,182 @@
+{
+    "1": {
+      "inputs": {
+        "prompt": ["__PROMPT__"]
+      },
+      "class_type": "Text Multiline",
+      "_meta": {
+        "title": "Prompt Input"
+      }
+    },
+    "2": {
+      "inputs": {
+        "text": ["1", 0]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": {
+        "title": "Encode Prompt"
+      }
+    },
+    "3": {
+      "inputs": {
+        "conditioning": ["2", 0]
+      },
+      "class_type": "FluxGuidance",
+      "_meta": {
+        "title": "Flux Guidance"
+      }
+    },
+    "4": {
+      "inputs": {
+        "cfg": 1,
+        "model": ["10", 0],
+        "positive": ["3", 0],
+        "negative": ["5", 0]
+      },
+      "class_type": "CFGGuider",
+      "_meta": {
+        "title": "Guider"
+      }
+    },
+    "5": {
+      "inputs": {
+        "text": "naked, nude, child, kid, inappropriate"
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": {
+        "title": "Negative Prompt"
+      }
+    },
+    "6": {
+      "inputs": {
+        "conditioning": ["5", 0]
+      },
+      "class_type": "ConditioningZeroOut",
+      "_meta": {
+        "title": "Filter Negatives"
+      }
+    },
+    "7": {
+      "inputs": {
+        "noise_seed": 42
+      },
+      "class_type": "RandomNoise",
+      "_meta": {
+        "title": "Seed Noise"
+      }
+    },
+    "8": {
+      "inputs": {
+        "sampler_name": "dpmpp_2m"
+      },
+      "class_type": "KSamplerSelect",
+      "_meta": {
+        "title": "Sampler"
+      }
+    },
+    "9": {
+      "inputs": {
+        "scheduler": "beta",
+        "steps": 30,
+        "denoise": 1,
+        "model": ["10", 0]
+      },
+      "class_type": "BasicScheduler",
+      "_meta": {
+        "title": "Scheduler"
+      }
+    },
+    "10": {
+      "inputs": {
+        "model_type": "flux",
+        "rel_l1_thresh": 0.4,
+        "max_skip_steps": 3,
+        "model": ["11", 0]
+      },
+      "class_type": "TeaCache",
+      "_meta": {
+        "title": "Model Wrapper"
+      }
+    },
+    "11": {
+      "inputs": {
+        "unet_name": "flux1-dev.safetensors",
+        "weight_dtype": "default"
+      },
+      "class_type": "UNETLoader",
+      "_meta": {
+        "title": "Load UNet"
+      }
+    },
+    "12": {
+      "inputs": {
+        "width": 960,
+        "height": 540,
+        "batch_size": 1
+      },
+      "class_type": "EmptyLatentImage",
+      "_meta": {
+        "title": "Create Latent"
+      }
+    },
+    "13": {
+      "inputs": {
+        "noise": ["7", 0],
+        "guider": ["4", 0],
+        "sampler": ["8", 0],
+        "sigmas": ["9", 0],
+        "latent_image": ["12", 0]
+      },
+      "class_type": "SamplerCustomAdvanced",
+      "_meta": {
+        "title": "Generate Image"
+      }
+    },
+    "14": {
+      "inputs": {
+        "samples": ["13", 0]
+      },
+      "class_type": "VAEDecode",
+      "_meta": {
+        "title": "Decode Image"
+      }
+    },
+    "15": {
+      "inputs": {
+        "image": ["14", 0],
+        "image_name": "__FACE__"
+      },
+      "class_type": "LoadImage",
+      "_meta": {
+        "title": "Load Face"
+      }
+    },
+    "16": {
+      "inputs": {
+        "enabled": true,
+        "swap_model": "inswapper_128.onnx",
+        "facedetection": "retinaface_resnet50",
+        "face_restore_model": "GPEN-BFR-1024.onnx",
+        "face_restore_visibility": 1,
+        "input_faces_index": "0",
+        "source_faces_index": "0",
+        "input_image": ["14", 0],
+        "source_image": ["15", 0]
+      },
+      "class_type": "ReActorFaceSwap",
+      "_meta": {
+        "title": "Face Swap"
+      }
+    },
+    "17": {
+      "inputs": {
+        "filename_prefix": "flask_output",
+        "images": ["16", 0]
+      },
+      "class_type": "SaveImage",
+      "_meta": {
+        "title": "Save Final"
+      }
+    }
+  }
+  

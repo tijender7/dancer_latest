@@ -1,0 +1,143 @@
+{
+  "1": {
+    "class_type": "Text Multiline",
+    "inputs": {
+      "text": ""
+    }
+  },
+  "2": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": [
+        "1",
+        0
+      ]
+    }
+  },
+  "3": {
+    "class_type": "WANNimationInput",
+    "inputs": {
+      "model_name": "Wan2.1-Fun-14B-InP.safetensors",
+      "prompt": [
+        "2",
+        0
+      ],
+      "num_frames": 16,
+      "frame_rate": 12
+    }
+  },
+  "4": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ]
+    }
+  },
+  "5": {
+    "class_type": "VideoToFrames",
+    "inputs": {
+      "video": [
+        "4",
+        0
+      ]
+    }
+  },
+  "6": {
+    "class_type": "ReActorFaceBoost",
+    "inputs": {
+      "enabled": true,
+      "boost_model": "GPEN-BFR-1024.onnx",
+      "interpolation": "Bicubic",
+      "visibility": 1,
+      "codeformer_weight": 1,
+      "restore_with_main_after": false
+    }
+  },
+  "7": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "placeholder.png"
+    }
+  },
+  "8": {
+    "class_type": "ReActorFaceSwap",
+    "inputs": {
+      "enabled": true,
+      "swap_model": "inswapper_128.onnx",
+      "facedetection": "retinaface_resnet50",
+      "face_restore_model": "GPEN-BFR-1024.onnx",
+      "face_restore_visibility": 1,
+      "codeformer_weight": 1,
+      "detect_gender_input": "no",
+      "detect_gender_source": "no",
+      "input_faces_index": "0",
+      "source_faces_index": "0",
+      "console_log_level": 1,
+      "input_image": [
+        "5",
+        0
+      ],
+      "source_image": [
+        "7",
+        0
+      ],
+      "face_boost": [
+        "6",
+        0
+      ]
+    }
+  },
+  "9": {
+    "class_type": "Upscale Model Loader",
+    "inputs": {
+      "model_name": "OmniSR_X2_DIV2K.safetensors"
+    }
+  },
+  "10": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": [
+        "9",
+        0
+      ],
+      "image": [
+        "8",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "LatentVideoCombineFrames",
+    "inputs": {
+      "images": [
+        "10",
+        0
+      ],
+      "frame_rate": 12
+    }
+  },
+  "12": {
+    "class_type": "FileNamePrefix",
+    "inputs": {
+      "date": "true",
+      "date_directory": "true",
+      "custom_directory": "yt/generated_videos",
+      "custom_text": ""
+    }
+  },
+  "13": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "filename_prefix": [
+        "12",
+        0
+      ],
+      "video": [
+        "11",
+        0
+      ]
+    }
+  }
+}

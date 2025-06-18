@@ -1,0 +1,119 @@
+{
+    "611": {
+      "inputs": {
+        "date": "true",
+        "date_directory": "true",
+        "custom_directory": "",
+        "custom_text": ""
+      },
+      "class_type": "FileNamePrefix",
+      "_meta": {
+        "title": "File Name Prefix (Mikey)"
+      }
+    },
+    "617": {
+      "inputs": {
+        "text": ""
+      },
+      "class_type": "Text Multiline",
+      "_meta": {
+        "title": "Text Multiline"
+      }
+    },
+    "626": {
+      "inputs": {
+        "image": "PLACEHOLDER_FACE.png"
+      },
+      "class_type": "LoadImage",
+      "_meta": {
+        "title": "Load Image (Face)"
+      }
+    },
+    "619": {
+      "inputs": {
+        "model_type": "flux",
+        "rel_l1_thresh": 0.4,
+        "max_skip_steps": 3,
+        "model": [
+          "590",
+          0
+        ]
+      },
+      "class_type": "TeaCache",
+      "_meta": {
+        "title": "TeaCache"
+      }
+    },
+    "590": {
+      "inputs": {
+        "unet_name": "flux1-dev.safetensors",
+        "weight_dtype": "default"
+      },
+      "class_type": "UNETLoader",
+      "_meta": {
+        "title": "Load Diffusion Model"
+      }
+    },
+    "625": {
+      "inputs": {
+        "enabled": true,
+        "swap_model": "inswapper_128.onnx",
+        "facedetection": "retinaface_resnet50",
+        "face_restore_model": "GPEN-BFR-1024.onnx",
+        "face_restore_visibility": 1,
+        "codeformer_weight": 1,
+        "detect_gender_input": "no",
+        "detect_gender_source": "no",
+        "input_faces_index": "0",
+        "source_faces_index": "0",
+        "console_log_level": 1,
+        "input_image": [
+          "606",
+          0
+        ],
+        "source_image": [
+          "626",
+          0
+        ],
+        "face_boost": [
+          "628",
+          0
+        ]
+      },
+      "class_type": "ReActorFaceSwap",
+      "_meta": {
+        "title": "ReActor 🌌 Fast Face Swap"
+      }
+    },
+    "628": {
+      "inputs": {
+        "enabled": true,
+        "boost_model": "GPEN-BFR-1024.onnx",
+        "interpolation": "Bicubic",
+        "visibility": 1,
+        "codeformer_weight": 1,
+        "restore_with_main_after": false
+      },
+      "class_type": "ReActorFaceBoost",
+      "_meta": {
+        "title": "ReActor 🌌 Face Booster"
+      }
+    },
+    "627": {
+      "inputs": {
+        "filename_prefix": [
+          "611",
+          0
+        ],
+        "images": [
+          "625",
+          0
+        ]
+      },
+      "class_type": "SaveImage",
+      "_meta": {
+        "title": "Save Image"
+      }
+    }
+  }
+  
