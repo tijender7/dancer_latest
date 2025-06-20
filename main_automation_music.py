@@ -849,10 +849,15 @@ def main():
             
             # Step 7: Wait for generation completion with prompt ID tracking
             generation_success = wait_for_image_generation_with_tracking(all_images_dir, generation_requests, config['comfyui_api_url'])
-            
+
             if generation_success:
-                # Step 8: Start Telegram approval
-                telegram_process = start_telegram_approval(all_images_dir)
+                # Step 8: Collect generated images and start Telegram approval
+                collected_images = collect_generated_images_from_history(generation_requests, config['comfyui_api_url'])
+                if not collected_images:
+                    logger.error("❌ No generated images found to send for approval")
+                    return False
+
+                telegram_process = start_telegram_approval(collected_images)
                 
                 if telegram_process:
                     # Step 9: Wait for approvals
