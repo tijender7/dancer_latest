@@ -1,0 +1,97 @@
+[2025-06-19 09:03:46] [INFO] ================================================================================
+[2025-06-19 09:03:46] [INFO] [MOVIE] STARTING COMPLETE MUSCLE MOMMY CONTENT PIPELINE
+[2025-06-19 09:03:46] [INFO] [MUSCLE] Trigger Word: Muscl3-m0mmy
+[2025-06-19 09:03:46] [INFO] [WEIGHT] Theme: Gym & Fitness with Varied Attire
+[2025-06-19 09:03:46] [INFO] ================================================================================
+[2025-06-19 09:03:46] [INFO] [ROCKET] Starting Muscle Mommy API server in background...
+[2025-06-19 09:03:46] [INFO]    Muscle Mommy API server PID: 37048
+[2025-06-19 09:03:46] [INFO]    Waiting for Muscle Mommy API server to initialize...
+[2025-06-19 09:03:54] [ERROR] [ERROR] Muscle Mommy API server failed to start or crashed immediately
+[2025-06-19 09:03:54] [INFO] ================================================================================
+[2025-06-19 09:03:54] [INFO] [CHART] MUSCLE MOMMY PIPELINE EXECUTION SUMMARY
+[2025-06-19 09:03:54] [INFO] ================================================================================
+[2025-06-19 09:03:54] [INFO] [CLOCK] Start Time: 2025-06-19 09:03:46
+[2025-06-19 09:03:54] [INFO] [CLOCK] End Time: 2025-06-19 09:03:54
+[2025-06-19 09:03:54] [INFO] [TIMER] Total Duration: 0:00:08
+[2025-06-19 09:03:54] [INFO] [MUSCLE] Trigger Word Used: Muscl3-m0mmy
+[2025-06-19 09:03:54] [INFO] [WEIGHT] Content Type: Gym & Fitness Muscle Focused
+[2025-06-19 09:03:54] [INFO] 
+[2025-06-19 09:03:54] [INFO] [OK] Completed Steps (0):
+[2025-06-19 09:03:54] [INFO] 
+[2025-06-19 09:03:54] [INFO] [PARTY] MUSCLE MOMMY PIPELINE COMPLETED SUCCESSFULLY!
+[2025-06-19 09:03:54] [INFO]    All muscle mommy content generated and ready!
+[2025-06-19 09:03:54] [INFO] ================================================================================
+[2025-06-19 09:05:19] [INFO] ================================================================================
+[2025-06-19 09:05:19] [INFO] [MOVIE] STARTING COMPLETE MUSCLE MOMMY CONTENT PIPELINE
+[2025-06-19 09:05:19] [INFO] [MUSCLE] Trigger Word: Muscl3-m0mmy
+[2025-06-19 09:05:19] [INFO] [WEIGHT] Theme: Gym & Fitness with Varied Attire
+[2025-06-19 09:05:19] [INFO] ================================================================================
+[2025-06-19 09:05:19] [INFO] [ROCKET] Starting Muscle Mommy API server in background...
+[2025-06-19 09:05:19] [INFO]    Muscle Mommy API server PID: 37400
+[2025-06-19 09:05:19] [INFO]    Waiting for Muscle Mommy API server to initialize...
+[2025-06-19 09:05:27] [INFO] [OK] Muscle Mommy API server started successfully
+[2025-06-19 09:05:27] [INFO] [ROCKET] Starting Muscle Mommy Step: Muscle Mommy Content Generation
+[2025-06-19 09:05:27] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_muscle_mommy.py
+[2025-06-19 09:19:25] [INFO] [STOP] Stopping Muscle Mommy API server...
+[2025-06-19 09:19:25] [INFO] [OK] Muscle Mommy API server stopped gracefully
+[2025-06-19 09:25:28] [INFO] ================================================================================
+[2025-06-19 09:25:28] [INFO] [MOVIE] STARTING COMPLETE MUSCLE MOMMY CONTENT PIPELINE
+[2025-06-19 09:25:28] [INFO] [MUSCLE] Trigger Word: Muscl3-m0mmy
+[2025-06-19 09:25:28] [INFO] [WEIGHT] Theme: Gym & Fitness with Varied Attire
+[2025-06-19 09:25:28] [INFO] ================================================================================
+[2025-06-19 09:25:28] [INFO] [ROCKET] Starting Muscle Mommy API server in background...
+[2025-06-19 09:25:28] [INFO]    Muscle Mommy API server PID: 32700
+[2025-06-19 09:25:28] [INFO]    Waiting for Muscle Mommy API server to initialize...
+[2025-06-19 09:25:36] [INFO] [OK] Muscle Mommy API server started successfully
+[2025-06-19 09:25:36] [INFO] [ROCKET] Starting Muscle Mommy Step: Muscle Mommy Content Generation
+[2025-06-19 09:25:36] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_muscle_mommy.py
+[2025-06-19 10:49:57] [INFO] [STOP] Stopping Muscle Mommy API server...
+[2025-06-19 10:49:57] [INFO] [OK] Muscle Mommy API server stopped gracefully
+[2025-06-19 11:22:16] [INFO] ================================================================================
+[2025-06-19 11:22:16] [INFO] [MOVIE] STARTING COMPLETE MUSCLE MOMMY CONTENT PIPELINE
+[2025-06-19 11:22:16] [INFO] [MUSCLE] Trigger Word: Muscl3-m0mmy
+[2025-06-19 11:22:16] [INFO] [WEIGHT] Theme: Gym & Fitness with Varied Attire
+[2025-06-19 11:22:16] [INFO] ================================================================================
+[2025-06-19 11:22:16] [INFO] [ROCKET] Starting Muscle Mommy API server in background...
+[2025-06-19 11:22:16] [INFO]    Muscle Mommy API server PID: 37520
+[2025-06-19 11:22:16] [INFO]    Waiting for Muscle Mommy API server to initialize...
+[2025-06-19 11:22:24] [INFO] [OK] Muscle Mommy API server started successfully
+[2025-06-19 11:22:24] [INFO] [ROCKET] Starting Muscle Mommy Step: Muscle Mommy Content Generation
+[2025-06-19 11:22:24] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_muscle_mommy.py
+[2025-06-19 11:40:34] [INFO] [STOP] Stopping Muscle Mommy API server...
+[2025-06-19 11:40:34] [INFO] [OK] Muscle Mommy API server stopped gracefully
+[2025-06-19 11:52:46] [INFO] ================================================================================
+[2025-06-19 11:52:46] [INFO] [MOVIE] STARTING COMPLETE MUSCLE MOMMY CONTENT PIPELINE
+[2025-06-19 11:52:46] [INFO] [MUSCLE] Trigger Word: Muscl3-m0mmy
+[2025-06-19 11:52:46] [INFO] [WEIGHT] Theme: Gym & Fitness with Varied Attire
+[2025-06-19 11:52:46] [INFO] ================================================================================
+[2025-06-19 11:52:46] [INFO] [ROCKET] Starting Muscle Mommy API server in background...
+[2025-06-19 11:52:46] [INFO]    Muscle Mommy API server PID: 41032
+[2025-06-19 11:52:46] [INFO]    Waiting for Muscle Mommy API server to initialize...
+[2025-06-19 11:52:54] [INFO] [OK] Muscle Mommy API server started successfully
+[2025-06-19 11:52:54] [INFO] [ROCKET] Starting Muscle Mommy Step: Muscle Mommy Content Generation
+[2025-06-19 11:52:54] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_muscle_mommy.py
+[2025-06-19 13:31:56] [INFO] [OK] COMPLETED: Muscle Mommy Content Generation
+[2025-06-19 13:31:59] [INFO] [ROCKET] Starting Muscle Mommy Step: Beat Synchronization
+[2025-06-19 13:31:59] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\beat_sync_single.py
+[2025-06-19 13:37:36] [INFO] [OK] COMPLETED: Beat Synchronization
+[2025-06-19 13:37:39] [INFO] [ROCKET] Starting Muscle Mommy Step: 4K Upscaling
+[2025-06-19 13:37:39] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\upscale_4k_parallel.py
+[2025-06-19 14:15:02] [INFO] [STOP] Stopping Muscle Mommy API server...
+[2025-06-19 14:15:02] [INFO] [OK] Muscle Mommy API server stopped gracefully
+[2025-06-19 14:16:22] [INFO] ================================================================================
+[2025-06-19 14:16:22] [INFO] [MOVIE] STARTING COMPLETE MUSCLE MOMMY CONTENT PIPELINE
+[2025-06-19 14:16:22] [INFO] [MUSCLE] Trigger Word: Muscl3-m0mmy
+[2025-06-19 14:16:22] [INFO] [WEIGHT] Theme: Gym & Fitness with Varied Attire
+[2025-06-19 14:16:22] [INFO] ================================================================================
+[2025-06-19 14:16:22] [INFO] [ROCKET] Starting Muscle Mommy API server in background...
+[2025-06-19 14:16:22] [INFO]    Muscle Mommy API server PID: 33184
+[2025-06-19 14:16:22] [INFO]    Waiting for Muscle Mommy API server to initialize...
+[2025-06-19 14:16:30] [INFO] [OK] Muscle Mommy API server started successfully
+[2025-06-19 14:16:30] [INFO] [ROCKET] Starting Muscle Mommy Step: Muscle Mommy Content Generation
+[2025-06-19 14:16:30] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_muscle_mommy.py
+[2025-06-19 14:45:13] [INFO] [OK] COMPLETED: Muscle Mommy Content Generation
+[2025-06-19 14:45:16] [INFO] [ROCKET] Starting Muscle Mommy Step: Beat Synchronization
+[2025-06-19 14:45:16] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\beat_sync_single.py
+[2025-06-19 14:47:45] [INFO] [STOP] Stopping Muscle Mommy API server...
+[2025-06-19 14:47:45] [INFO] [OK] Muscle Mommy API server stopped gracefully

@@ -146,3 +146,39 @@
 [2025-06-18 16:22:30] [INFO] [ART] Step 1: Faceswap Content Generation (with dynamic prompts and Telegram approval)
 [2025-06-18 16:22:30] [INFO] [ROCKET] Starting Step: Faceswap Content Generation
 [2025-06-18 16:22:30] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_with_faceswap.py
+[2025-06-18 20:57:04] [INFO] [OK] COMPLETED: Faceswap Content Generation
+[2025-06-18 20:57:07] [INFO] [SYNC] Step 2: Beat Synchronization
+[2025-06-18 20:57:07] [INFO] [ROCKET] Starting Step: Beat Synchronization
+[2025-06-18 20:57:07] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\beat_sync_single.py
+[2025-06-18 21:02:24] [INFO] [OK] COMPLETED: Beat Synchronization
+[2025-06-18 21:02:27] [INFO] [FAST] Step 3: 4K Upscaling
+[2025-06-18 21:02:27] [INFO] [ROCKET] Starting Step: 4K Upscaling
+[2025-06-18 21:02:27] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\upscale_4k_parallel.py
+[2025-06-18 21:55:32] [INFO] [OK] COMPLETED: 4K Upscaling
+[2025-06-18 21:55:35] [INFO] [MEMO] Step 4: Viral Metadata Generation (Optional)
+[2025-06-18 21:55:35] [INFO] [ROCKET] Starting Step: Viral Metadata Generation
+[2025-06-18 21:55:35] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\youtube_metadata_generator.py
+[2025-06-18 21:55:36] [ERROR] [ERROR] FAILED: Viral Metadata Generation
+[2025-06-18 21:55:36] [ERROR]    Exit code: 1
+[2025-06-18 21:55:36] [WARN] [WARN] Continuing despite optional step failure
+[2025-06-18 21:55:39] [INFO] [OK] Faceswap pipeline completed successfully!
+[2025-06-18 21:55:39] [INFO] [MEMO] Note: Reels generation and YouTube upload were skipped as requested
+[2025-06-18 21:55:39] [INFO] [STOP] Stopping API server...
+[2025-06-18 21:55:39] [INFO] [OK] API server stopped gracefully
+[2025-06-18 21:55:39] [INFO] ================================================================================
+[2025-06-18 21:55:39] [INFO] [CHART] FACESWAP PIPELINE EXECUTION SUMMARY
+[2025-06-18 21:55:39] [INFO] ================================================================================
+[2025-06-18 21:55:39] [INFO] [CLOCK] Start Time: 2025-06-18 16:22:22
+[2025-06-18 21:55:39] [INFO] [CLOCK] End Time: 2025-06-18 21:55:39
+[2025-06-18 21:55:39] [INFO] [TIMER] Total Duration: 5:33:16
+[2025-06-18 21:55:39] [INFO] 
+[2025-06-18 21:55:39] [INFO] [OK] Completed Steps (3):
+[2025-06-18 21:55:39] [INFO]    [OK] Faceswap Content Generation
+[2025-06-18 21:55:39] [INFO]    [OK] Beat Synchronization
+[2025-06-18 21:55:39] [INFO]    [OK] 4K Upscaling
+[2025-06-18 21:55:39] [INFO] [ERROR] Failed Steps (1):
+[2025-06-18 21:55:39] [INFO]    [ERROR] Viral Metadata Generation
+[2025-06-18 21:55:39] [INFO] 
+[2025-06-18 21:55:39] [INFO] [WARN] FACESWAP PIPELINE PARTIALLY COMPLETED
+[2025-06-18 21:55:39] [INFO]    Core content generated but some final steps failed
+[2025-06-18 21:55:39] [INFO] ================================================================================
