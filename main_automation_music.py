@@ -3,11 +3,14 @@
 Music-Based Image & Video Generation Pipeline
 
 This script automatically:
-1. Finds the latest music analysis folder (Run_*_music)
-2. Loads prompts from the generated prompts.json file
+1. Finds the latest music analysis folder (``Run_*_music``)
+2. Loads prompts from the generated ``prompts.json`` file
 3. Generates images for each music segment using ComfyUI
 4. Provides Telegram approval for generated images
-5. Creates videos from approved images
+5. Creates videos from the approved images (new Stage 2)
+
+Stage 2.5 optionally polls ComfyUI for video completion and then
+performs cleanup of temporary files.
 
 Author: Claude Code Assistant
 Date: 2025-06-19
@@ -715,6 +718,75 @@ def collect_generated_images_from_history(generation_requests, comfyui_base_url)
     logger.info(f"📊 Total images collected: {len(collected_images)}")
     return collected_images
 
+# --- Helper: Trigger Image or Video Generation via API ---
+def trigger_generation(api_url: str, endpoint: str, prompt: str, segment_id: int,
+                       output_subfolder: str, filename_prefix: str,
+                       video_start_image: str | None = None) -> str | None:
+    """Submit a generation request to the intermediate API server."""
+    full_url = f"{api_url.rstrip('/')}/{endpoint.lstrip('/')}"
+    payload = {
+        "prompt": prompt,
+        "segment_id": segment_id,
+        "face": None,
+        "output_subfolder": output_subfolder,
+        "filename_prefix_text": filename_prefix,
+    }
+    if endpoint == "generate_video" and video_start_image:
+        payload["video_start_image_path"] = video_start_image
+
+    log_prefix = f"API Call -> {endpoint}"
+    for attempt in range(1, MAX_API_RETRIES + 1):
+        try:
+            logger.info(f"  🚀 {log_prefix} (Attempt {attempt}/{MAX_API_RETRIES})")
+            response = requests.post(full_url, json=payload, timeout=REQUEST_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+            if data.get("status") == "submitted" and data.get("prompt_id"):
+                logger.info(f"  ✅ {log_prefix} submitted. Prompt ID: {data['prompt_id']}")
+                return data.get("prompt_id")
+            logger.warning(f"  ⚠️ {log_prefix} failed: {data}")
+        except Exception as e:
+            logger.warning(f"  ⚠️ {log_prefix} error on attempt {attempt}: {e}")
+        time.sleep(API_RETRY_DELAY)
+    logger.error(f"  ❌ {log_prefix} failed after {MAX_API_RETRIES} attempts")
+    return None
+
+# --- Helper: Wait for Video Jobs to Finish ---
+def wait_for_video_jobs(prompt_ids: list[str], comfyui_base_url: str) -> dict[str, str]:
+    """Poll ComfyUI history until all prompt IDs complete or timeout."""
+    if not prompt_ids:
+        logger.info("No video jobs to poll.")
+        return {}
+
+    progress = tqdm(total=len(prompt_ids), desc="Polling Videos")
+    start_time = datetime.now()
+    overall_timeout = POLLING_TIMEOUT_VIDEO * len(prompt_ids)
+    remaining = set(prompt_ids)
+    status_map: dict[str, str] = {pid: "pending" for pid in prompt_ids}
+
+    while remaining and (datetime.now() - start_time).total_seconds() < overall_timeout:
+        completed_in_pass = set()
+        for pid in list(remaining):
+            if check_comfyui_job_status(comfyui_base_url, pid):
+                completed_in_pass.add(pid)
+                status_map[pid] = "completed"
+                progress.update(1)
+        remaining -= completed_in_pass
+        if not remaining:
+            break
+        elapsed = int((datetime.now() - start_time).total_seconds())
+        progress.set_description(f"Polling Videos ({len(prompt_ids)-len(remaining)}/{len(prompt_ids)} done | {elapsed}s)")
+        time.sleep(POLLING_INTERVAL * 2)
+
+    progress.close()
+    for pid in remaining:
+        status_map[pid] = "timeout"
+    if remaining:
+        logger.warning(f"Video polling finished with {len(remaining)} jobs still incomplete.")
+    else:
+        logger.info("All video jobs completed.")
+    return status_map
+
 # --- Function: Start Telegram Approval ---
 def start_telegram_approval(collected_images):
     """Start Telegram approval process for generated images"""
@@ -867,6 +939,45 @@ def main():
                     approved_images_dir = output_run_dir / APPROVED_IMAGES_SUBFOLDER
                     approved_count = copy_approved_images(all_images_dir, approved_images_dir, approvals)
                     
+                    # --- STAGE 2: Submit Video Generation Jobs ---
+                    temp_start_dir = COMFYUI_INPUT_DIR_BASE / TEMP_VIDEO_START_SUBDIR
+                    temp_start_dir.mkdir(exist_ok=True)
+
+                    approved_image_paths = sorted(approved_images_dir.glob('*.*'))
+                    video_output_subfolder = f"{output_run_dir.name}/all_videos"
+                    video_prompt_ids = []
+
+                    for img_path in tqdm(approved_image_paths, desc="Submitting Videos"):
+                        match = re.search(r"segment_(\d+)", img_path.stem)
+                        segment_num = int(match.group(1)) if match else 0
+                        prompt_info = next((p for p in prompts if p['segment_id'] == segment_num), None)
+                        prompt_text = enhance_prompt_for_deity(prompt_info['primary_prompt']) if prompt_info else ''
+
+                        temp_name = f"start_{img_path.stem}_{datetime.now().strftime('%H%M%S%f')}{img_path.suffix}"
+                        temp_dest = temp_start_dir / temp_name
+                        shutil.copyfile(img_path, temp_dest)
+                        comfy_start = (Path(TEMP_VIDEO_START_SUBDIR) / temp_name).as_posix()
+
+                        pid = trigger_generation(
+                            config['api_server_url'], 'generate_video', prompt_text, segment_num,
+                            video_output_subfolder, 'music_video', comfy_start
+                        )
+                        if pid:
+                            video_prompt_ids.append(pid)
+                        time.sleep(0.5)
+
+                    logger.info(f"--- STAGE 2: Submitted {len(video_prompt_ids)}/{len(approved_image_paths)} video jobs ---")
+
+                    # --- STAGE 2.5: Wait for Video Jobs (Optional) ---
+                    video_status = wait_for_video_jobs(video_prompt_ids, config['comfyui_api_url']) if video_prompt_ids else {}
+
+                    # --- Cleanup Temp Files ---
+                    try:
+                        shutil.rmtree(temp_start_dir)
+                    except Exception as e:
+                        logger.warning(f"Temp dir cleanup failed: {e}")
+
+                    # --- Final Summary ---
                     logger.info("=" * 80)
                     logger.info("🎉 MUSIC PIPELINE COMPLETED SUCCESSFULLY!")
                     logger.info("=" * 80)
@@ -874,9 +985,13 @@ def main():
                     logger.info(f"🎵 Music Source: {music_folder.name}")
                     logger.info(f"🎨 Total Images Generated: {len(list(all_images_dir.glob('*.png')))}")
                     logger.info(f"✅ Approved Images: {approved_count}")
+                    logger.info(f"🎬 Videos Submitted: {len(video_prompt_ids)}")
+                    completed_videos = sum(1 for s in video_status.values() if s == 'completed')
+                    if video_status:
+                        logger.info(f"🎞️  Videos Completed: {completed_videos}")
                     logger.info(f"📝 Log File: {log_file}")
                     logger.info("=" * 80)
-                    
+
                     return True
                 else:
                     logger.error("❌ Failed to start Telegram approval")
