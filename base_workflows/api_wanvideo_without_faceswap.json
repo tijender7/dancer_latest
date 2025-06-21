@@ -311,7 +311,7 @@
   },
   "341": {
     "inputs": {
-      "image": "250613074552_00002_.png"
+      "image": ""
     },
     "class_type": "LoadImage",
     "_meta": {

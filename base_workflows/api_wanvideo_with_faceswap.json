@@ -89,7 +89,7 @@
   },
   "392": {
     "inputs": {
-      "image": "face.png"
+      "image": ""
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -377,7 +377,7 @@
   },
   "341": {
     "inputs": {
-      "image": "250422105328_VIDEO_Dharmendra_approved_full_3__00001.png"
+      "image": ""
     },
     "class_type": "LoadImage",
     "_meta": {
