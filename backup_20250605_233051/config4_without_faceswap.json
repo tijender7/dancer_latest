@@ -1,0 +1,11 @@
+{
+    "ollama_model": "gemma3:12b",
+    "ollama_api_url": "http://localhost:11434/api/generate",
+    "num_prompts": 20,
+    "comfyui_api_url": "http://127.0.0.1:8188",
+    "api_server_url": "http://127.0.0.1:8000",
+    "base_workflow_image": "base_workflows/API_flux_and_reactor_without_faceswap.json", 
+    "base_workflow_video": "base_workflows/api_wanvideo_without_faceswap.json",
+    "source_faces_path": "source_faces",
+    "output_folder": "output_runs_consolidated"
+}
