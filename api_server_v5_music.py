@@ -199,10 +199,15 @@ def prepare_and_submit_workflow(
         # --- Inject Video Start Image (For Video Workflow) ---
         if workflow_type == "Video" and video_start_node_id and request.video_start_image_path:
             start_image_path_str = request.video_start_image_path.replace("\\", "/")
-            logger.info(f"[{client_id}] Injecting video start image '{start_image_path_str}' for segment {request.segment_id}")
+            logger.info(f"[{client_id}] 🎬 VIDEO START IMAGE INJECTION:")
+            logger.info(f"[{client_id}]    - Node ID: {video_start_node_id}")
+            logger.info(f"[{client_id}]    - Original Path: {request.video_start_image_path}")
+            logger.info(f"[{client_id}]    - Cleaned Path: {start_image_path_str}")
+            logger.info(f"[{client_id}]    - Segment: {request.segment_id}")
             wf[video_start_node_id]["inputs"]["image"] = start_image_path_str
+            logger.info(f"[{client_id}]    - ✅ Successfully injected into workflow node {video_start_node_id}")
         elif workflow_type == "Video":
-            logger.info(f"[{client_id}] No video start image provided for segment {request.segment_id}")
+            logger.info(f"[{client_id}] ❌ No video start image provided for segment {request.segment_id}")
 
         # --- Set Output Path and Prefix (using FileNamePrefix node) ---
         if output_prefix_node_id:
@@ -313,7 +318,7 @@ async def generate_image(request: MusicGenerationRequest):
         logger.error(f"[{client_id}] ❌ Unexpected error: {error_msg}", exc_info=True)
         raise HTTPException(status_code=500, detail=error_msg)
 
-@app.post("/generate/video")
+@app.post("/generate_video")
 async def generate_video(request: MusicGenerationRequest):
     """Generate video from music segment prompt"""
     client_id = str(uuid.uuid4())

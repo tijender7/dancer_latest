@@ -578,11 +578,12 @@ def create_api_server():
 
     @api_app.post("/generate/video")
     async def generate_video(request: MusicGenerationRequest):
-        """Generate video from music segment prompt"""
+        """Generate video from music segment prompt (enhanced for video workflow)"""
         client_id = str(uuid.uuid4())
         logger.info(f"[{client_id}] 🎬 Video generation request for segment {request.segment_id}")
         
         try:
+            # Enhanced video workflow with proper start image handling
             results = prepare_and_submit_workflow(base_video_workflow, "Video", request, client_id)
             
             if results["status"] == "submitted":
@@ -1111,6 +1112,247 @@ def copy_approved_images(all_images_dir, approved_images_dir, approvals):
     return approved_count
 
 # =============================================================================
+# VIDEO GENERATION FUNCTIONS
+# =============================================================================
+
+def setup_temp_video_directory():
+    """Setup temporary directory for video start images"""
+    temp_start_image_dir = COMFYUI_INPUT_DIR_BASE / TEMP_VIDEO_START_SUBDIR
+    try:
+        temp_start_image_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"✅ Ensured temporary directory for video start images: {temp_start_image_dir}")
+        return temp_start_image_dir
+    except Exception as e:
+        logger.error(f"❌ Failed to create temp video start directory: {e}", exc_info=True)
+        return None
+
+def generate_videos_from_approved_images(config, approved_images_dir, prompts, output_run_dir):
+    """Generate videos using approved images as start frames"""
+    logger.info("🎬 Starting video generation from approved images...")
+    
+    # Setup temp directory for video start images
+    temp_start_image_dir = setup_temp_video_directory()
+    if not temp_start_image_dir:
+        logger.error("❌ Failed to setup temp directory for video generation")
+        return 0
+    
+    # Get list of approved images
+    approved_images = list(approved_images_dir.glob("*.png")) + list(approved_images_dir.glob("*.jpg"))
+    if not approved_images:
+        logger.warning("⚠️ No approved images found for video generation")
+        return 0
+    
+    logger.info(f"📁 Found {len(approved_images)} approved images")
+    
+    # Prepare for video generation requests
+    video_requests = []
+    output_subfolder_for_comfyui = f"{output_run_dir.name}/all_videos"
+    
+    # Process each approved image
+    for idx, img_path in enumerate(approved_images, 1):
+        logger.info(f"🎬 Preparing video {idx}/{len(approved_images)}: {img_path.name}")
+        
+        # Copy image to temp directory for ComfyUI input
+        try:
+            temp_filename = f"video_start_{idx:03d}_{datetime.now().strftime('%H%M%S%f')}{img_path.suffix}"
+            temp_dest_path = temp_start_image_dir / temp_filename
+            shutil.copyfile(img_path, temp_dest_path)
+            
+            # Create relative path for ComfyUI
+            temp_start_image_comfy_path = Path(TEMP_VIDEO_START_SUBDIR) / temp_filename
+            temp_start_image_comfy_path_str = temp_start_image_comfy_path.as_posix()
+            
+            logger.info(f"   Copied to ComfyUI input: {temp_start_image_comfy_path_str}")
+            
+        except Exception as copy_e:
+            logger.error(f"   Failed to copy image to temp dir: {copy_e}")
+            continue
+        
+        # Use a representative prompt (first one for now - could be improved)
+        if prompts:
+            prompt_text = prompts[0]["primary_prompt"]
+            segment_id = idx  # Use index as segment ID for videos
+        else:
+            prompt_text = "Beautiful Indian woman dancing gracefully in a cinematic scene"
+            segment_id = idx
+        
+        # Prepare video generation request
+        request_data = {
+            "prompt": prompt_text,
+            "segment_id": segment_id,
+            "face": None,  # No face for music-based generation
+            "output_subfolder": output_subfolder_for_comfyui,
+            "filename_prefix_text": f"music_video",
+            "video_start_image_path": temp_start_image_comfy_path_str
+        }
+        
+        # Send request to API server with retry mechanism
+        submitted = False
+        for attempt in range(1, MAX_API_RETRIES + 1):
+            try:
+                logger.info(f"📤 Sending video generation request {idx} (Attempt {attempt}/{MAX_API_RETRIES})...")
+                
+                response = requests.post(
+                    f"http://127.0.0.1:{API_SERVER_PORT}/generate/video",
+                    json=request_data,
+                    timeout=REQUEST_TIMEOUT
+                )
+                
+                response.raise_for_status()
+                result = response.json()
+                
+                api_status = result.get('status', 'N/A')
+                prompt_id = result.get('prompt_id', 'N/A')
+                api_error = result.get('error', None)
+                
+                logger.info(f"   API Server Status: '{api_status}'")
+                logger.info(f"   ComfyUI Prompt ID: '{prompt_id}'")
+                if api_error:
+                    logger.warning(f"   API Server reported error: {api_error}")
+                
+                if api_status == 'submitted' and prompt_id and prompt_id != 'N/A':
+                    logger.info(f"✅ Video {idx} submitted successfully! Prompt ID: {prompt_id}")
+                    video_requests.append({
+                        "video_id": idx,
+                        "prompt_id": prompt_id,
+                        "image_used": str(img_path),
+                        "temp_image_path": str(temp_dest_path)
+                    })
+                    submitted = True
+                    break
+                else:
+                    logger.error(f"❌ API submission failed for video {idx}. Status: {api_status}, ID: {prompt_id}")
+                    
+            except requests.exceptions.Timeout:
+                logger.warning(f"⚠️ Request timeout for video {idx} (Attempt {attempt})")
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"⚠️ Request error for video {idx} (Attempt {attempt}): {e}")
+            except Exception as e:
+                logger.error(f"❌ Unexpected error for video {idx} (Attempt {attempt}): {e}")
+            
+            if attempt < MAX_API_RETRIES:
+                logger.info(f"   Retrying in {API_RETRY_DELAY} seconds...")
+                time.sleep(API_RETRY_DELAY)
+        
+        if not submitted:
+            logger.error(f"❌ Failed to submit video {idx} after {MAX_API_RETRIES} attempts")
+        
+        # Small delay between requests
+        time.sleep(2)
+    
+    logger.info(f"📊 Video Generation Summary:")
+    logger.info(f"   Total images processed: {len(approved_images)}")
+    logger.info(f"   Successful video requests: {len(video_requests)}")
+    logger.info(f"   Failed video requests: {len(approved_images) - len(video_requests)}")
+    
+    # Wait for video generation completion
+    if video_requests:
+        videos_completed = wait_for_video_generation_with_tracking(video_requests)
+        
+        # Cleanup temp directory
+        try:
+            if temp_start_image_dir.exists():
+                shutil.rmtree(temp_start_image_dir)
+                logger.info(f"🧹 Cleaned up temp directory: {temp_start_image_dir}")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to cleanup temp directory: {e}")
+        
+        return videos_completed
+    else:
+        logger.warning("⚠️ No videos were submitted for generation")
+        return 0
+
+def wait_for_video_generation_with_tracking(video_requests):
+    """Wait for all videos to be generated using polling"""
+    logger.info(f"⏳ Tracking video generation progress...")
+    logger.info(f"   Total video jobs: {len(video_requests)}")
+    
+    comfyui_base_url = "http://127.0.0.1:8188"
+    
+    # Smart timeout for videos (longer than images)
+    PROGRESS_TIMEOUT = 1800  # 30 minutes without progress
+    last_progress_time = time.time()
+    total_start_time = time.time()
+    
+    # Track video job details
+    job_details = {}
+    for req in video_requests:
+        job_details[req["prompt_id"]] = {
+            "video_id": req["video_id"],
+            "status": "pending",
+            "image_used": req["image_used"]
+        }
+    
+    with tqdm(total=len(video_requests), desc="Processing Videos", unit="video") as pbar:
+        last_completed = 0
+        
+        while True:
+            current_time = time.time()
+            time_since_progress = current_time - last_progress_time
+            total_elapsed = current_time - total_start_time
+            completed_count = 0
+            running_count = 0
+            pending_count = 0
+            failed_count = 0
+            progress_made = False
+            
+            # Check each video job
+            for prompt_id, details in job_details.items():
+                if details["status"] != "completed":
+                    job_status = check_comfyui_job_status(comfyui_base_url, prompt_id)
+                    
+                    # Detect progress
+                    if job_status["status"] != details["status"]:
+                        progress_made = True
+                        logger.info(f"🔄 Video {details['video_id']} status changed: {details['status']} → {job_status['status']}")
+                    
+                    details["status"] = job_status["status"]
+                    
+                    if job_status["status"] == "completed":
+                        logger.info(f"✅ Video {details['video_id']} completed!")
+                        progress_made = True
+                
+                # Count statuses
+                if details["status"] == "completed":
+                    completed_count += 1
+                elif details["status"] == "running":
+                    running_count += 1
+                elif details["status"] == "pending":
+                    pending_count += 1
+                else:
+                    failed_count += 1
+            
+            # Reset timeout if progress was made
+            if progress_made or completed_count > last_completed:
+                last_progress_time = current_time
+            
+            # Update progress bar
+            if completed_count > last_completed:
+                pbar.update(completed_count - last_completed)
+                last_completed = completed_count
+            
+            # Update progress bar description
+            remaining_timeout = max(0, PROGRESS_TIMEOUT - time_since_progress)
+            pbar.set_description(f"Videos - Done: {completed_count}, Running: {running_count}, Pending: {pending_count}, Failed: {failed_count} | Timeout: {remaining_timeout:.0f}s")
+            
+            logger.info(f"📊 Video Status - Completed: {completed_count}/{len(video_requests)}, Running: {running_count}, Pending: {pending_count}, Failed: {failed_count}")
+            
+            # Check timeout condition
+            if time_since_progress > PROGRESS_TIMEOUT:
+                logger.warning(f"⚠️ Video timeout reached: No progress for {PROGRESS_TIMEOUT}s")
+                break
+            
+            # Check if all videos are done
+            if completed_count + failed_count >= len(video_requests):
+                logger.info(f"✅ All videos processed! Completed: {completed_count}, Failed: {failed_count}")
+                break
+            
+            time.sleep(POLLING_INTERVAL * 2)  # Longer polling interval for videos
+    
+    pbar.close()
+    return completed_count
+
+# =============================================================================
 # MAIN EXECUTION FUNCTIONS
 # =============================================================================
 
@@ -1125,11 +1367,11 @@ def print_banner():
     print("3. 🚀 Start embedded API server")
     print("4. 🎨 Generate images for each music segment")
     print("5. 📱 Provide Telegram approval interface")
-    print("6. 🎬 Prepare for video generation")
+    print("6. 🎬 Generate videos from approved images")
     print("="*80)
     print()
 
-def print_summary(success: bool, output_run_dir=None, approved_count=0, total_images=0):
+def print_summary(success: bool, output_run_dir=None, approved_count=0, total_images=0, videos_generated=0):
     """Print completion summary"""
     print("\n" + "="*80)
     if success:
@@ -1140,18 +1382,19 @@ def print_summary(success: bool, output_run_dir=None, approved_count=0, total_im
         print("   • API server started and configured")
         print("   • Images generated for all music segments")
         print("   • Telegram approval process completed")
-        print("   • Approved images prepared for video generation")
+        print("   • Videos generated from approved images")
         print()
         if output_run_dir:
             print("📁 Results:")
             print(f"   Output Directory: {output_run_dir}")
             print(f"   Total Images Generated: {total_images}")
             print(f"   Approved Images: {approved_count}")
+            print(f"   Videos Generated: {videos_generated}")
         print()
         print("🎬 Next steps:")
-        print("   • Review approved images in the output folder")
-        print("   • Run video generation if desired")
+        print("   • Review generated videos in the output folder")
         print("   • Upload content to social media")
+        print("   • Share your amazing music-synced videos!")
     else:
         print("💥 ALL-IN-ONE MUSIC PIPELINE FAILED!")
         print("="*80)
@@ -1245,9 +1488,22 @@ def main():
                     approved_images_dir = output_run_dir / APPROVED_IMAGES_SUBFOLDER
                     approved_count = copy_approved_images(all_images_dir, approved_images_dir, approvals)
                     
-                    logger.info("=" * 80)
-                    logger.info("🎉 ALL-IN-ONE MUSIC PIPELINE COMPLETED SUCCESSFULLY!")
-                    logger.info("=" * 80)
+                    # Step 14: Generate videos from approved images
+                    if approved_count > 0:
+                        videos_generated = generate_videos_from_approved_images(
+                            config, approved_images_dir, prompts, output_run_dir
+                        )
+                        
+                        logger.info("=" * 80)
+                        logger.info("🎉 ALL-IN-ONE MUSIC PIPELINE COMPLETED SUCCESSFULLY!")
+                        logger.info("=" * 80)
+                        logger.info(f"🎬 Videos Generated: {videos_generated}")
+                    else:
+                        logger.info("=" * 80)
+                        logger.info("⚠️ PIPELINE COMPLETED - NO VIDEOS GENERATED")
+                        logger.info("=" * 80)
+                        logger.info("🎬 Videos Generated: 0 (no approved images)")
+                        videos_generated = 0
                     logger.info(f"📁 Output Directory: {output_run_dir}")
                     logger.info(f"🎵 Music Source: {music_folder.name}")
                     logger.info(f"🎨 Total Images Generated: {total_images}")
@@ -1255,7 +1511,7 @@ def main():
                     logger.info(f"📝 Log File: {log_file}")
                     logger.info("=" * 80)
                     
-                    print_summary(True, output_run_dir, approved_count, total_images)
+                    print_summary(True, output_run_dir, approved_count, total_images, videos_generated)
                     return True
                 else:
                     logger.error("❌ Failed to start Telegram approval")

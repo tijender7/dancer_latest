@@ -202,6 +202,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     all_done = all(info["status"] is not None for info in image_states.values())
     if all_done and not shutting_down:
         shutting_down = True
+        # Only count images from current run (not historical approvals)
         approved = [p for p, info in image_states.items() if info["status"] == "approve"]
         rejected = [p for p, info in image_states.items() if info["status"] == "reject"]
 

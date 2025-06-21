@@ -28,6 +28,7 @@ import threading
 import time
 import logging
 import glob
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
@@ -718,6 +719,26 @@ def collect_generated_images_from_history(generation_requests, comfyui_base_url)
     logger.info(f"📊 Total images collected: {len(collected_images)}")
     return collected_images
 
+# --- Helper: Enhance Prompts for Deity Content ---
+def enhance_prompt_for_deity(original_prompt: str) -> str:
+    """Enhance prompts with deity-specific visual elements"""
+    if not original_prompt:
+        return "newfantasycore, divine being with mystical energy, majestic and attractive"
+    
+    # Add deity enhancement prefixes
+    enhancements = [
+        "newfantasycore, powerful muscular god with divine purple eyes, athletic build with visible muscle definition, ethereal light, majestic and attractive",
+        "newfantasycore, extremely buff deity with radiant silver eyes, powerful muscular frame, celestial energy, majestic and attractive",
+        "newfantasycore, athletic divine being with glowing amber eyes, ripped physique, mystical energy surrounding the figure, majestic and attractive"
+    ]
+    
+    # Use a simple hash of the prompt to consistently pick the same enhancement
+    import hashlib
+    prompt_hash = int(hashlib.md5(original_prompt.encode()).hexdigest(), 16)
+    selected_enhancement = enhancements[prompt_hash % len(enhancements)]
+    
+    return f"{selected_enhancement}, {original_prompt}"
+
 # --- Helper: Trigger Image or Video Generation via API ---
 def trigger_generation(api_url: str, endpoint: str, prompt: str, segment_id: int,
                        output_subfolder: str, filename_prefix: str,
@@ -825,11 +846,17 @@ def start_telegram_approval(collected_images):
         return False
 
 # --- Function: Wait for Approvals ---
-def wait_for_approvals():
+def wait_for_approvals(current_run_images=None):
     """Wait for user to approve images via Telegram"""
     logger.info("⏳ Waiting for Telegram approvals...")
     logger.info("   Use your Telegram bot to approve/reject images")
     logger.info("   Press Ctrl+C to skip approval and use all images")
+    
+    # Get current run image paths for filtering
+    current_image_paths = set()
+    if current_run_images:
+        current_image_paths = {str(Path(img).resolve()) for img in current_run_images}
+        logger.info(f"🎯 Looking for approvals of {len(current_image_paths)} current run images")
     
     try:
         while True:
@@ -838,11 +865,37 @@ def wait_for_approvals():
                     with open(TELEGRAM_APPROVALS_JSON, 'r') as f:
                         approvals = json.load(f)
                     
-                    approved_count = len([img for img in approvals.values() if img.get('approved', False)])
+                    # Filter approvals to only include current run images
+                    current_run_approvals = {}
+                    if current_run_images:
+                        for img_path, approval_data in approvals.items():
+                            if img_path in current_image_paths:
+                                current_run_approvals[img_path] = approval_data
+                    else:
+                        current_run_approvals = approvals
                     
-                    if approved_count > 0:
+                    total_current_images = len(current_run_approvals)
+                    approved_count = len([img for img in current_run_approvals.values() if img.get('status') == 'approve'])
+                    rejected_count = len([img for img in current_run_approvals.values() if img.get('status') == 'reject'])
+                    
+                    logger.info(f"📊 Current run status: {approved_count} approved, {rejected_count} rejected, {total_current_images - approved_count - rejected_count} pending")
+                    
+                    # Check if all current run images have been reviewed
+                    if total_current_images > 0 and (approved_count + rejected_count) == total_current_images:
+                        logger.info(f"✅ All current run images reviewed! {approved_count} approved, {rejected_count} rejected")
+                        logger.info(f"[Main] All Telegram images reviewed! {approved_count} approved, {rejected_count} rejected")
+                        print(f"[Main] ✅ All Telegram images reviewed! {approved_count} approved, {rejected_count} rejected")
+                        print(f"[Main] Proceeding to video generation with {approved_count} approved images...")
+                        return current_run_approvals
+                    elif approved_count > 0 and not current_run_images:
+                        # Fallback for older behavior if current_run_images not provided
                         logger.info(f"✅ Found {approved_count} approved images!")
                         return approvals
+                    elif total_current_images > 0:
+                        # Still waiting for more reviews
+                        logger.debug(f"[Main] Telegram progress: {approved_count + rejected_count}/{total_current_images} images reviewed")
+                    else:
+                        logger.debug("Waiting for approval file to be populated...")
                         
                 except json.JSONDecodeError:
                     pass  # File might be being written
@@ -867,12 +920,16 @@ def copy_approved_images(all_images_dir, approved_images_dir, approvals):
     
     # Copy only approved images
     approved_count = 0
-    for img_name, img_data in approvals.items():
-        if img_data.get('approved', False):
-            src_path = all_images_dir / img_name
+    for img_path_str, img_data in approvals.items():
+        if img_data.get('status') == 'approve':
+            src_path = Path(img_path_str)  # Use the full path from the approval data
             if src_path.exists():
-                shutil.copy2(src_path, approved_images_dir / img_name)
+                dest_path = approved_images_dir / src_path.name
+                shutil.copy2(src_path, dest_path)
                 approved_count += 1
+                logger.info(f"   Copied approved image: {src_path.name}")
+            else:
+                logger.warning(f"   Approved image not found: {src_path}")
     
     logger.info(f"✅ Copied {approved_count} approved images for video generation")
     return approved_count
@@ -928,54 +985,194 @@ def main():
                 if not collected_images:
                     logger.error("❌ No generated images found to send for approval")
                     return False
+                
+                # Log what images were generated
+                logger.info(f"📋 Generated Images Summary ({len(collected_images)} total):")
+                for i, item in enumerate(collected_images, 1):
+                    img_name = Path(item["image_path"]).name
+                    logger.info(f"   {i}. {img_name} (Segment {item['segment_id']})")
+                logger.info("")
 
                 telegram_process = start_telegram_approval(collected_images)
                 
                 if telegram_process:
                     # Step 9: Wait for approvals
-                    approvals = wait_for_approvals()
+                    # Extract actual image paths from the collected_images data structure
+                    current_run_image_paths = [str(item["image_path"]) for item in collected_images]
+                    approvals = wait_for_approvals(current_run_image_paths)
                     
-                    # Step 10: Copy approved images
+                    # Step 10: Build approved_image_details structure like working file
+                    approved_image_details = []
+                    approved_paths = [path for path, info in approvals.items() 
+                                    if isinstance(info, dict) and info.get("status") == "approve"]
+                    
+                    # Log approved images
+                    logger.info(f"✅ Approved Images Summary ({len(approved_paths)} total):")
+                    for i, img_path in enumerate(approved_paths, 1):
+                        img_name = Path(img_path).name
+                        logger.info(f"   {i}. {img_name}")
+                    logger.info("")
+                    
+                    # Build structured approved image details
+                    for img_path_str in approved_paths:
+                        img_path_obj = Path(img_path_str)
+                        # Find corresponding segment from collected_images
+                        segment_id = 1  # Default
+                        prompt_text = ""
+                        actual_image_path = None
+                        
+                        for item in collected_images:
+                            if Path(item["image_path"]) == img_path_obj:
+                                segment_id = item["segment_id"]
+                                actual_image_path = item["image_path"]  # Use path from collected_images
+                                # Find the prompt for this segment
+                                prompt_info = next((p for p in prompts if p['segment_id'] == segment_id), None)
+                                prompt_text = prompt_info['primary_prompt'] if prompt_info else ''
+                                break
+                        
+                        # Only add if we found the image in current run's collected_images
+                        if actual_image_path:
+                            approved_image_details.append({
+                                "original_index": segment_id,
+                                "batch_image_index": 0,
+                                "approved_image_path": str(actual_image_path),
+                                "prompt": prompt_text,
+                                "face_filename": None,
+                                "base_image_prefix": f"music_segment_{segment_id:03d}"
+                            })
+                    
+                    logger.info(f"[Main] Final result: {len(approved_image_details)} images approved for video generation.")
+                    
+                    # Log final video generation details
+                    logger.info(f"🎬 Video Generation Mapping:")
+                    for i, item in enumerate(approved_image_details, 1):
+                        img_name = Path(item["approved_image_path"]).name
+                        segment = item["original_index"]
+                        prompt_preview = item["prompt"][:60] + "..." if len(item["prompt"]) > 60 else item["prompt"]
+                        logger.info(f"   Video {i}: {img_name} → Segment {segment} ({prompt_preview})")
+                    logger.info("")
+                    
+                    # Step 11: Copy approved images to dedicated folder
                     approved_images_dir = output_run_dir / APPROVED_IMAGES_SUBFOLDER
-                    approved_count = copy_approved_images(all_images_dir, approved_images_dir, approvals)
+                    approved_images_dir.mkdir(exist_ok=True)
+                    logger.info(f"Created/ensured approved images folder: {approved_images_dir}")
                     
-                    # --- STAGE 2: Submit Video Generation Jobs ---
-                    temp_start_dir = COMFYUI_INPUT_DIR_BASE / TEMP_VIDEO_START_SUBDIR
-                    temp_start_dir.mkdir(exist_ok=True)
+                    copied_count = 0
+                    for idx, approved_info in enumerate(approved_image_details):
+                        try:
+                            source_img_path = Path(approved_info['approved_image_path'])
+                            orig_idx = approved_info['original_index']
+                            batch_idx = approved_info['batch_image_index']
+                            dest_filename = f"approved_{orig_idx:03d}_batch{batch_idx}_{source_img_path.name}"
+                            dest_img_path = approved_images_dir / dest_filename
+                            shutil.copyfile(source_img_path, dest_img_path)
+                            logger.info(f"  ({idx+1}/{len(approved_image_details)}) Copied '{source_img_path.name}' -> '{dest_img_path.name}'")
+                            copied_count += 1
+                        except Exception as e:
+                            logger.error(f"Failed to copy approved image {idx+1}: {e}")
+                    
+                    logger.info(f"Finished copying {copied_count}/{len(approved_image_details)} approved images.")
+                    
+                    # --- STAGE 2: Submit Video Generation Jobs (for approved images) ---
+                    if not approved_image_details:
+                        logger.info("\n--- STAGE 2: No approved images for video generation. Skipping video submission. ---")
+                    else:
+                        logger.info(f"\n--- STAGE 2: Submitting Video Generation for {len(approved_image_details)} Approved Images ---")
+                        
+                        # Setup temp directory
+                        temp_start_image_dir = COMFYUI_INPUT_DIR_BASE / TEMP_VIDEO_START_SUBDIR
+                        temp_start_image_dir.mkdir(parents=True, exist_ok=True)
+                        logger.info(f"Ensured temporary directory for video start images: {temp_start_image_dir}")
+                        
+                        video_progress_bar = tqdm(approved_image_details, desc="Submitting Videos")
+                        items_successfully_sent_video = 0
+                        all_submitted_video_jobs = []
+                        video_output_subfolder = f"{output_run_dir.name}/all_videos"
+                        
+                        for approved_idx, approved_info in enumerate(approved_image_details):
+                            orig_index = approved_info['original_index']
+                            batch_index = approved_info['batch_image_index']
+                            prompt = approved_info['prompt']
+                            face_filename_only = approved_info['face_filename']
+                            approved_image_path = Path(approved_info['approved_image_path'])
+                            
+                            video_filename_prefix = f"{orig_index:03d}_batch{batch_index}_video_{'swapped' if face_filename_only else 'raw'}"
+                            
+                            video_progress_bar.set_description(f"Video Req {approved_idx+1}/{len(approved_image_details)} (OrigIdx {orig_index})")
+                            logger.info(f"\n🎬 Preparing Video Request [{approved_idx+1}/{len(approved_image_details)}] "
+                                        f"(Original Index: {orig_index}, Batch Index: {batch_index})")
+                            logger.info(f"   Using image: {approved_image_path}")
+                            
+                            # Copy approved image to temp directory for ComfyUI input
+                            temp_start_image_comfy_path_str = None
+                            if approved_image_path.is_file():
+                                try:
+                                    temp_start_filename = f"start_{orig_index:03d}_batch{batch_index}_{datetime.now().strftime('%H%M%S%f')}{approved_image_path.suffix}"
+                                    temp_dest_path = temp_start_image_dir / temp_start_filename
+                                    shutil.copyfile(approved_image_path, temp_dest_path)
+                                    temp_start_image_comfy_path = Path(TEMP_VIDEO_START_SUBDIR) / temp_start_filename
+                                    temp_start_image_comfy_path_str = temp_start_image_comfy_path.as_posix()
+                                    logger.info(f"   Copied '{approved_image_path.name}' -> Comfy Input as '{temp_start_image_comfy_path_str}'")
+                                except Exception as copy_e:
+                                    logger.error(f"   Failed to copy image '{approved_image_path}' to temp dir: {copy_e}. Video may use default start.", exc_info=True)
+                                    temp_start_image_comfy_path_str = None
+                            else:
+                                logger.warning(f"   Approved image file not found: '{approved_image_path}'. Video may use default start.")
+                                temp_start_image_comfy_path_str = None
+                            
+                            # Enhance the prompt
+                            enhanced_prompt = enhance_prompt_for_deity(prompt)
+                            
+                            # Submit video generation
+                            logger.info(f"   📤 Video API Request Parameters:")
+                            logger.info(f"      - Image Start: {temp_start_image_comfy_path_str}")
+                            logger.info(f"      - Prompt: {enhanced_prompt[:100]}...")
+                            logger.info(f"      - Segment: {orig_index}")
+                            
+                            comfy_video_prompt_id = trigger_generation(
+                                config['api_server_url'], "generate_video", enhanced_prompt, orig_index,
+                                video_output_subfolder, video_filename_prefix,
+                                video_start_image=temp_start_image_comfy_path_str
+                            )
+                            
+                            video_job_info = {
+                                "original_index": orig_index,
+                                "batch_image_index": batch_index,
+                                "video_prefix": video_filename_prefix,
+                                "video_prompt_id": comfy_video_prompt_id,
+                                "video_job_status": 'submitted' if comfy_video_prompt_id else 'failed',
+                                "approved_image_used": str(approved_image_path)
+                            }
+                            all_submitted_video_jobs.append(video_job_info)
+                            
+                            if comfy_video_prompt_id:
+                                items_successfully_sent_video += 1
+                            else:
+                                logger.error(f"Failed API call for Video (OrigIdx {orig_index}, Batch {batch_index}). Check API Server logs.")
+                            time.sleep(0.5)
+                        
+                        video_progress_bar.close()
+                        logger.info(f"--- STAGE 2: {items_successfully_sent_video}/{len(approved_image_details)} Video Generation Requests Submitted ---")
 
-                    approved_image_paths = sorted(approved_images_dir.glob('*.*'))
-                    video_output_subfolder = f"{output_run_dir.name}/all_videos"
-                    video_prompt_ids = []
-
-                    for img_path in tqdm(approved_image_paths, desc="Submitting Videos"):
-                        match = re.search(r"segment_(\d+)", img_path.stem)
-                        segment_num = int(match.group(1)) if match else 0
-                        prompt_info = next((p for p in prompts if p['segment_id'] == segment_num), None)
-                        prompt_text = enhance_prompt_for_deity(prompt_info['primary_prompt']) if prompt_info else ''
-
-                        temp_name = f"start_{img_path.stem}_{datetime.now().strftime('%H%M%S%f')}{img_path.suffix}"
-                        temp_dest = temp_start_dir / temp_name
-                        shutil.copyfile(img_path, temp_dest)
-                        comfy_start = (Path(TEMP_VIDEO_START_SUBDIR) / temp_name).as_posix()
-
-                        pid = trigger_generation(
-                            config['api_server_url'], 'generate_video', prompt_text, segment_num,
-                            video_output_subfolder, 'music_video', comfy_start
-                        )
-                        if pid:
-                            video_prompt_ids.append(pid)
-                        time.sleep(0.5)
-
-                    logger.info(f"--- STAGE 2: Submitted {len(video_prompt_ids)}/{len(approved_image_paths)} video jobs ---")
-
-                    # --- STAGE 2.5: Wait for Video Jobs (Optional) ---
-                    video_status = wait_for_video_jobs(video_prompt_ids, config['comfyui_api_url']) if video_prompt_ids else {}
-
-                    # --- Cleanup Temp Files ---
-                    try:
-                        shutil.rmtree(temp_start_dir)
-                    except Exception as e:
-                        logger.warning(f"Temp dir cleanup failed: {e}")
+                        # --- STAGE 2.5: Wait for Video Jobs (Optional) ---
+                        video_prompt_ids = [job['video_prompt_id'] for job in all_submitted_video_jobs if job['video_prompt_id']]
+                        video_status = wait_for_video_jobs(video_prompt_ids, config['comfyui_api_url']) if video_prompt_ids else {}
+                        
+                        # Cleanup temp directory
+                        try:
+                            if temp_start_image_dir.exists():
+                                shutil.rmtree(temp_start_image_dir)
+                                logger.info(f"🧹 Cleaned up temp directory: {temp_start_image_dir}")
+                        except Exception as e:
+                            logger.warning(f"⚠️ Failed to cleanup temp directory: {e}")
+                        
+                        # Set video variables for summary
+                        video_prompt_ids = [job['video_prompt_id'] for job in all_submitted_video_jobs if job['video_prompt_id']]
+                    
+                    # If no videos were processed, set empty defaults
+                    if 'all_submitted_video_jobs' not in locals():
+                        all_submitted_video_jobs = []
+                        video_status = {}
 
                     # --- Final Summary ---
                     logger.info("=" * 80)
@@ -983,9 +1180,9 @@ def main():
                     logger.info("=" * 80)
                     logger.info(f"📁 Output Directory: {output_run_dir}")
                     logger.info(f"🎵 Music Source: {music_folder.name}")
-                    logger.info(f"🎨 Total Images Generated: {len(list(all_images_dir.glob('*.png')))}")
-                    logger.info(f"✅ Approved Images: {approved_count}")
-                    logger.info(f"🎬 Videos Submitted: {len(video_prompt_ids)}")
+                    logger.info(f"🎨 Total Images Generated: {len(collected_images)}")
+                    logger.info(f"✅ Approved Images: {len(approved_image_details) if 'approved_image_details' in locals() else 0}")
+                    logger.info(f"🎬 Videos Submitted: {len(all_submitted_video_jobs)}")
                     completed_videos = sum(1 for s in video_status.values() if s == 'completed')
                     if video_status:
                         logger.info(f"🎞️  Videos Completed: {completed_videos}")
