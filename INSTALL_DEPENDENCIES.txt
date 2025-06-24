@@ -1,0 +1,62 @@
+MUSIC VIDEO BEAT SYNC COMPILER - INSTALLATION INSTRUCTIONS
+=========================================================
+
+To run the music video beat sync compiler, you need to install the following Python dependencies:
+
+REQUIRED PACKAGES:
+-----------------
+pip install librosa numpy moviepy tqdm openai-whisper
+
+INDIVIDUAL INSTALLATION:
+-----------------------
+pip install librosa        # For audio beat detection
+pip install numpy          # For numerical operations  
+pip install moviepy        # For video processing and editing
+pip install tqdm           # For progress bars
+pip install openai-whisper # For karaoke subtitle transcription
+
+FOR KARAOKE SUBTITLES (RECOMMENDED):
+-----------------------------------
+pip install openai-whisper
+# This enables automatic transcription and karaoke-style subtitles
+# Supports Hinglish (Hindi written in English characters)
+
+ALTERNATIVE (ALL AT ONCE):
+-------------------------
+pip install librosa numpy moviepy tqdm openai-whisper
+
+USAGE:
+------
+After installing dependencies, run:
+python3 music_video_beat_sync_compiler.py
+
+WHAT THE SCRIPT DOES:
+--------------------
+1. Automatically finds the latest Run_*_music_images folder in H:\dancers_content
+2. Locates video clips in the date subfolder (e.g., 250622)  
+3. Gets the latest song from D:\Comfy_UI_V20\ComfyUI\output\dancer\songs\
+4. Creates a beat-synced compilation using advanced beat detection
+5. Applies random visual effects and transitions
+6. Saves the final video in a new "music_video_compiled" folder
+
+OUTPUT LOCATION:
+---------------
+H:\dancers_content\Run_YYYYMMDD_HHMMSS_music_images\all_videos\music_video_compiled\
+
+The compiled video will be named:
+beat_synced_compilation_[song_name]_[timestamp].mp4
+
+FEATURES:
+---------
+- Automatic beat detection using librosa
+- Dynamic speed adjustments based on beat timing
+- Random visual effects (mirror, contrast, gamma, etc.)
+- Yoyo effects (forward/reverse) for dynamic segments
+- Crossfade transitions between clips
+- Progress tracking with visual progress bars
+- Automatic cleanup of temporary files
+
+TROUBLESHOOTING:
+---------------
+If you get import errors, make sure all dependencies are installed.
+If paths are not found, verify the folder structure matches the expected format.

@@ -18,7 +18,10 @@ Date: 2025-06-19
 
 from __future__ import annotations
 
+# Set UTF-8 encoding for Windows console
 import os
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+
 import sys
 import json
 import requests
@@ -52,8 +55,10 @@ except ImportError:
     print("ERROR: tqdm library not found. Please install it: pip install tqdm")
     sys.exit(1)
 
-# --- Load environment variables (.env) ---
-load_dotenv()
+# --- Load environment variables from parent directory (.env) ---
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(env_path)
+print(f"DEBUG: Loading environment from: {env_path}")
 
 print("DEBUG: Music Pipeline execution started.")
 
@@ -67,7 +72,7 @@ POLLING_TIMEOUT_VIDEO = 3600
 
 APPROVAL_SERVER_PORT = 5006  # Different port for music pipeline
 APPROVAL_FILENAME = "approved_images.json"
-APPROVED_IMAGES_SUBFOLDER = "approved_images_for_video"
+APPROVED_IMAGES_SUBFOLDER = "approved_images"
 
 # --- Configurable Paths ---
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -76,7 +81,7 @@ COMFYUI_OUTPUT_DIR_BASE = Path("H:/dancers_content")
 TEMP_VIDEO_START_SUBDIR = "temp_video_starts"
 
 # --- Telegram Approval Paths & Env Vars ---
-TELEGRAM_APPROVALS_DIR = SCRIPT_DIR / "telegram_approvals"
+TELEGRAM_APPROVALS_DIR = SCRIPT_DIR.parent.parent / "telegram_approvals"
 SEND_TELEGRAM_SCRIPT = TELEGRAM_APPROVALS_DIR / "send_telegram_image_approvals.py"
 TELEGRAM_APPROVALS_JSON = TELEGRAM_APPROVALS_DIR / "telegram_approvals.json"
 TOKEN_MAP_JSON = TELEGRAM_APPROVALS_DIR / "token_map.json"
@@ -98,7 +103,10 @@ log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - [%(filename)s:%
 log_file = log_directory / f"automation_music_pipeline_{datetime.now():%Y%m%d_%H%M%S}.log"
 file_handler = logging.FileHandler(log_file, encoding='utf-8')
 file_handler.setFormatter(log_formatter)
-console_handler = logging.StreamHandler(sys.stdout)
+# Fix console encoding for Windows emoji support
+import io
+console_stream = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+console_handler = logging.StreamHandler(console_stream)
 console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -107,13 +115,13 @@ if logger.hasHandlers():
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 print("DEBUG: Logging setup complete.")
-logger.info("🎵 Starting Music Pipeline Automation")
+logger.info("MUSIC: Starting Music Pipeline Automation")
 
 # --- Function: Load Config ---
-def load_config(config_path="config_music.json"):
+def load_config(config_path="config/config_music.json"):
     """Load and validate music pipeline configuration"""
     print(f"DEBUG: Loading music config from '{config_path}'")
-    config_path_obj = SCRIPT_DIR / config_path
+    config_path_obj = SCRIPT_DIR.parent / config_path
     
     try:
         if not config_path_obj.is_file():
@@ -137,8 +145,8 @@ def load_config(config_path="config_music.json"):
                 raise KeyError(f"Missing required key '{key}' in config")
         
         # Resolve relative paths
-        config['source_faces_path'] = (SCRIPT_DIR / config['source_faces_path']).resolve()
-        config['output_folder'] = (SCRIPT_DIR / config['output_folder']).resolve()
+        config['source_faces_path'] = (SCRIPT_DIR.parent / config['source_faces_path']).resolve()
+        config['output_folder'] = (SCRIPT_DIR.parent / config['output_folder']).resolve()
         
         if not config['source_faces_path'].is_dir():
             logger.warning(f"Source faces dir not found: {config['source_faces_path']}")
@@ -157,20 +165,20 @@ def load_config(config_path="config_music.json"):
 # --- Function: Find Latest Music Run ---
 def find_latest_music_run():
     """Find the most recent Run_*_music folder"""
-    logger.info("🔍 Searching for latest music run folder...")
+    logger.info("SEARCH: Searching for latest music run folder...")
     
     pattern = str(COMFYUI_OUTPUT_DIR_BASE / "Run_*_music")
     music_folders = glob.glob(pattern)
     
     if not music_folders:
-        logger.error("❌ No music run folders found matching pattern: Run_*_music")
+        logger.error("ERROR: No music run folders found matching pattern: Run_*_music")
         return None
     
     # Sort by modification time, newest first
     music_folders.sort(key=lambda x: Path(x).stat().st_mtime, reverse=True)
     latest_folder = Path(music_folders[0])
     
-    logger.info(f"✅ Found latest music run: {latest_folder.name}")
+    logger.info(f"SUCCESS: Found latest music run: {latest_folder.name}")
     logger.info(f"   Full path: {latest_folder}")
     logger.info(f"   Modified: {datetime.fromtimestamp(latest_folder.stat().st_mtime)}")
     
@@ -179,11 +187,11 @@ def find_latest_music_run():
 # --- Function: Load Music Prompts ---
 def load_music_prompts(music_folder):
     """Load and parse prompts from the music analysis JSON file"""
-    logger.info(f"📝 Loading music prompts from {music_folder.name}")
+    logger.info(f"LOG: Loading music prompts from {music_folder.name}")
     
     prompts_file = music_folder / "prompts.json"
     if not prompts_file.exists():
-        logger.error(f"❌ Prompts file not found: {prompts_file}")
+        logger.error(f"ERROR: Prompts file not found: {prompts_file}")
         return None, None
     
     try:
@@ -194,7 +202,7 @@ def load_music_prompts(music_folder):
         segments = data.get("segments", [])
         
         if not segments:
-            logger.error("❌ No segments found in prompts.json")
+            logger.error("ERROR: No segments found in prompts.json")
             return None, None
         
         # Extract prompts dynamically
@@ -211,7 +219,7 @@ def load_music_prompts(music_folder):
             }
             prompts.append(segment_info)
         
-        logger.info(f"✅ Loaded {len(prompts)} music prompts successfully")
+        logger.info(f"SUCCESS: Loaded {len(prompts)} music prompts successfully")
         logger.info(f"   Song: {metadata.get('song_file', 'Unknown')}")
         logger.info(f"   Duration: {metadata.get('total_duration', 'Unknown')}s")
         logger.info(f"   Generated: {metadata.get('generation_timestamp', 'Unknown')}")
@@ -219,7 +227,7 @@ def load_music_prompts(music_folder):
         return prompts, metadata
         
     except Exception as e:
-        logger.error(f"❌ Failed to load music prompts: {e}", exc_info=True)
+        logger.error(f"ERROR: Failed to load music prompts: {e}", exc_info=True)
         return None, None
 
 # --- Function: Create Output Run Directory ---
@@ -273,11 +281,11 @@ def check_comfyui_queue():
 def start_api_server(config):
     """Start the music API server in background"""
     api_port = config['api_server_url'].split(':')[-1]
-    logger.info(f"🚀 Starting Music API Server on port {api_port}...")
+    logger.info(f"START: Starting Music API Server on port {api_port}...")
     
     api_script = SCRIPT_DIR / "api_server_v5_music.py"
     if not api_script.exists():
-        logger.error(f"❌ API server script not found: {api_script}")
+        logger.error(f"ERROR: API server script not found: {api_script}")
         return None
     
     try:
@@ -294,8 +302,8 @@ def start_api_server(config):
                 cwd=str(SCRIPT_DIR)
             )
         
-        logger.info(f"📝 API server stdout: {api_stdout_log}")
-        logger.info(f"📝 API server stderr: {api_stderr_log}")
+        logger.info(f"LOG: API server stdout: {api_stdout_log}")
+        logger.info(f"LOG: API server stderr: {api_stderr_log}")
         
         # Wait a moment for server to start
         time.sleep(8)
@@ -306,7 +314,7 @@ def start_api_server(config):
             try:
                 response = requests.get(f"{config['api_server_url']}/", timeout=10)
                 if response.status_code == 200:
-                    logger.info("✅ Music API Server started successfully")
+                    logger.info("SUCCESS: Music API Server started successfully")
                     # Test the configuration endpoint too
                     try:
                         config_response = requests.get(f"{config['api_server_url']}/status", timeout=5)
@@ -317,11 +325,11 @@ def start_api_server(config):
                         pass  # Optional check
                     return process
                 else:
-                    logger.warning(f"⚠️ API Server returned status: {response.status_code}, retrying...")
+                    logger.warning(f"WARNING: API Server returned status: {response.status_code}, retrying...")
             except requests.RequestException as e:
-                logger.warning(f"⚠️ Retry {retry+1}/{max_retries}: {e}")
+                logger.warning(f"WARNING: Retry {retry+1}/{max_retries}: {e}")
                 if retry == max_retries - 1:
-                    logger.error(f"❌ Failed to connect to API Server after {max_retries} retries")
+                    logger.error(f"ERROR: Failed to connect to API Server after {max_retries} retries")
                     # Check if process is still running
                     if process.poll() is None:
                         logger.error("   API Server process is still running but not responding")
@@ -334,7 +342,7 @@ def start_api_server(config):
             time.sleep(5)  # Wait 5 seconds between retries
             
     except Exception as e:
-        logger.error(f"❌ Failed to start API Server: {e}")
+        logger.error(f"ERROR: Failed to start API Server: {e}")
         return None
 
 # --- Function: Enhance Prompt for Fantasy Deity ---
@@ -392,9 +400,9 @@ def generate_images_from_music(config, prompts, output_run_dir, all_images_dir):
         # Enhance prompt for muscular deity characteristics
         prompt_text = enhance_prompt_for_deity(original_prompt)
         
-        logger.info(f"📝 Processing segment {segment_id}/{len(prompts)}: {prompt_info['start_time']}-{prompt_info['end_time']}")
+        logger.info(f"LOG: Processing segment {segment_id}/{len(prompts)}: {prompt_info['start_time']}-{prompt_info['end_time']}")
         logger.info(f"🎭 Original prompt: {original_prompt[:100]}...")
-        logger.info(f"⚡ Enhanced prompt: {prompt_text[:100]}...")
+        logger.info(f"FAST: Enhanced prompt: {prompt_text[:100]}...")
         
         # Prepare request data
         request_data = {
@@ -424,19 +432,19 @@ def generate_images_from_music(config, prompts, output_run_dir, all_images_dir):
                         health_data = health_response.json()
                         logger.info(f"🏥 Health check data: {health_data}")
                     else:
-                        logger.warning(f"⚠️ Health check failed: {health_response.text}")
+                        logger.warning(f"WARNING: Health check failed: {health_response.text}")
                 except Exception as health_e:
-                    logger.error(f"❌ Health check failed: {health_e}")
+                    logger.error(f"ERROR: Health check failed: {health_e}")
                 
-                logger.info(f"🚀 Now sending POST request...")
+                logger.info(f"START: Now sending POST request...")
                 response = requests.post(
                     f"{config['api_server_url']}/generate/image",
                     json=request_data,
                     timeout=REQUEST_TIMEOUT
                 )
-                logger.info(f"✅ Received response: Status {response.status_code}")
+                logger.info(f"SUCCESS: Received response: Status {response.status_code}")
                 logger.info(f"📄 Response headers: {dict(response.headers)}")
-                logger.info(f"📝 Response body: {response.text}")
+                logger.info(f"LOG: Response body: {response.text}")
                 
                 response.raise_for_status()
                 result = response.json()
@@ -451,7 +459,7 @@ def generate_images_from_music(config, prompts, output_run_dir, all_images_dir):
                     logger.warning(f"   API Server reported error: {api_error}")
                 
                 if api_status == 'submitted' and prompt_id and prompt_id != 'N/A':
-                    logger.info(f"✅ Segment {segment_id} submitted successfully! Prompt ID: {prompt_id}")
+                    logger.info(f"SUCCESS: Segment {segment_id} submitted successfully! Prompt ID: {prompt_id}")
                     generation_requests.append({
                         "segment_id": segment_id,
                         "prompt_id": prompt_id,
@@ -462,14 +470,14 @@ def generate_images_from_music(config, prompts, output_run_dir, all_images_dir):
                     submitted = True
                     break
                 else:
-                    logger.error(f"❌ API submission failed for segment {segment_id}. Status: {api_status}, ID: {prompt_id}")
+                    logger.error(f"ERROR: API submission failed for segment {segment_id}. Status: {api_status}, ID: {prompt_id}")
                     if api_error:
                         logger.error(f"   API Server reported error: {api_error}")
                     
             except requests.exceptions.Timeout:
-                logger.warning(f"⚠️ Request timeout for segment {segment_id} (Attempt {attempt}): Request timed out after {REQUEST_TIMEOUT}s")
+                logger.warning(f"WARNING: Request timeout for segment {segment_id} (Attempt {attempt}): Request timed out after {REQUEST_TIMEOUT}s")
             except requests.exceptions.RequestException as e:
-                logger.warning(f"⚠️ Request error for segment {segment_id} (Attempt {attempt}): {e}")
+                logger.warning(f"WARNING: Request error for segment {segment_id} (Attempt {attempt}): {e}")
                 if hasattr(e, 'response') and e.response is not None:
                     logger.warning(f"   Status Code: {e.response.status_code}")
                     try:
@@ -478,23 +486,23 @@ def generate_images_from_music(config, prompts, output_run_dir, all_images_dir):
                     except:
                         logger.warning(f"   Response Text: {e.response.text[:500]}")
             except json.JSONDecodeError as e:
-                logger.error(f"❌ Error decoding JSON response for segment {segment_id} (Attempt {attempt}): {e}")
+                logger.error(f"ERROR: Error decoding JSON response for segment {segment_id} (Attempt {attempt}): {e}")
                 if 'response' in locals():
                     logger.debug(f"   Raw Response Text: {response.text[:500]}")
             except Exception as e:
-                logger.error(f"❌ Unexpected error for segment {segment_id} (Attempt {attempt}): {e}", exc_info=True)
+                logger.error(f"ERROR: Unexpected error for segment {segment_id} (Attempt {attempt}): {e}", exc_info=True)
             
             if attempt < MAX_API_RETRIES:
                 logger.info(f"   Retrying in {API_RETRY_DELAY} seconds...")
                 time.sleep(API_RETRY_DELAY)
         
         if not submitted:
-            logger.error(f"❌ Failed to submit segment {segment_id} after {MAX_API_RETRIES} attempts")
+            logger.error(f"ERROR: Failed to submit segment {segment_id} after {MAX_API_RETRIES} attempts")
         
         # Small delay between requests to avoid overwhelming the system
         time.sleep(3)
     
-    logger.info(f"📊 Generation Summary:")
+    logger.info(f"STATS: Generation Summary:")
     logger.info(f"   Total segments: {len(prompts)}")
     logger.info(f"   Successful requests: {len(generation_requests)}")
     logger.info(f"   Failed requests: {len(prompts) - len(generation_requests)}")
@@ -560,7 +568,7 @@ def check_job_status(prompt_ids, comfyui_base_url):
         return status
         
     except Exception as e:
-        logger.error(f"❌ Failed to check job status: {e}")
+        logger.error(f"ERROR: Failed to check job status: {e}")
         return None
 
 # --- Function: Wait for Image Generation Completion with Progress Tracking ---
@@ -598,14 +606,14 @@ def wait_for_image_generation_with_tracking(all_images_dir, generation_requests,
                 # Update progress bar description
                 pbar.set_description(f"Jobs - Done: {completed_count}, Running: {running_count}, Pending: {pending_count}, Failed: {failed_count}")
                 
-                logger.info(f"📊 Job Status - Completed: {completed_count}/{len(generation_requests)}, Running: {running_count}, Pending: {pending_count}, Failed: {failed_count}")
+                logger.info(f"STATS: Job Status - Completed: {completed_count}/{len(generation_requests)}, Running: {running_count}, Pending: {pending_count}, Failed: {failed_count}")
                 
                 # Check if all jobs are done (completed only, since we don't track failures in this pattern)
                 if completed_count >= len(generation_requests):
                     # Collect actual generated images using ComfyUI history (working pattern)
                     collected_images = collect_generated_images_from_history(generation_requests, comfyui_base_url)
                     
-                    logger.info(f"✅ All jobs completed! Completed: {completed_count}")
+                    logger.info(f"SUCCESS: All jobs completed! Completed: {completed_count}")
                     logger.info(f"📁 Generated images collected via history: {len(collected_images)}")
                     
                     pbar.close()
@@ -624,7 +632,7 @@ def wait_for_image_generation_with_tracking(all_images_dir, generation_requests,
         running = len(final_status["running"])
         total_elapsed = time.time() - start_time
         idle_time = time.time() - last_progress_time
-        logger.warning(f"⚠️ Timeout reached after {idle_time:.0f}s of no activity (total time: {total_elapsed:.0f}s). Final status - Completed: {completed}, Still Running: {running}")
+        logger.warning(f"WARNING: Timeout reached after {idle_time:.0f}s of no activity (total time: {total_elapsed:.0f}s). Final status - Completed: {completed}, Still Running: {running}")
         
         # Collect actual generated images using ComfyUI history (working pattern)
         collected_images = collect_generated_images_from_history(generation_requests, comfyui_base_url)
@@ -681,7 +689,7 @@ def check_comfyui_job_status(comfyui_base_url, prompt_id):
 # --- Function: Collect Generated Images from History ---
 def collect_generated_images_from_history(generation_requests, comfyui_base_url):
     """Collect actual generated images using ComfyUI history (working pattern)"""
-    logger.info("🔍 Collecting generated images via ComfyUI history...")
+    logger.info("SEARCH: Collecting generated images via ComfyUI history...")
     
     # Find the save node ID from the workflow
     save_node_id = "607"  # From the workflow file: "API_Image_Output_SaveNode"
@@ -710,13 +718,13 @@ def collect_generated_images_from_history(generation_requests, comfyui_base_url)
                         "image_path": full_path,
                         "relative_path": rel_path
                     })
-                    logger.info(f"   ✅ Found: {full_path}")
+                    logger.info(f"   SUCCESS: Found: {full_path}")
                 else:
-                    logger.warning(f"   ❌ Missing: {full_path}")
+                    logger.warning(f"   ERROR: Missing: {full_path}")
         else:
             logger.info(f"   No history found for segment {segment_id}")
     
-    logger.info(f"📊 Total images collected: {len(collected_images)}")
+    logger.info(f"STATS: Total images collected: {len(collected_images)}")
     return collected_images
 
 # --- Helper: Enhance Prompts for Deity Content ---
@@ -740,36 +748,74 @@ def enhance_prompt_for_deity(original_prompt: str) -> str:
     return f"{selected_enhancement}, {original_prompt}"
 
 # --- Helper: Trigger Image or Video Generation via API ---
-def trigger_generation(api_url: str, endpoint: str, prompt: str, segment_id: int,
+def trigger_generation(api_url: str, endpoint: str, prompt: str, face_filename: str | None,
                        output_subfolder: str, filename_prefix: str,
-                       video_start_image: str | None = None) -> str | None:
-    """Submit a generation request to the intermediate API server."""
+                       video_start_image: str | None = None):
+    """
+    Sends a request to the intermediate API server (api_server_v5_without_faceswap.py).
+    Returns comfy_prompt_id if submitted successfully, else None.
+    """
     full_url = f"{api_url.rstrip('/')}/{endpoint.lstrip('/')}"
     payload = {
         "prompt": prompt,
-        "segment_id": segment_id,
-        "face": None,
+        "face": face_filename,  # Match working automation format
         "output_subfolder": output_subfolder,
-        "filename_prefix_text": filename_prefix,
+        "filename_prefix_text": filename_prefix
     }
     if endpoint == "generate_video" and video_start_image:
         payload["video_start_image_path"] = video_start_image
 
     log_prefix = f"API Call -> {endpoint}"
+    logger.info(f"  ➡️ {log_prefix}: Preparing request...")
+    logger.info(f"     URL: {full_url}")
+    logger.info(f"     Prompt (start): '{prompt[:70]}...'")
+    logger.info(f"     Face Filename: '{face_filename or 'None'}'")
+    logger.info(f"     Output Subfolder: '{output_subfolder}'")
+    logger.info(f"     Filename Prefix: '{filename_prefix}'")
+    if video_start_image:
+        logger.info(f"     Video Start Image: '{video_start_image}'")
+    logger.debug(f"    Payload Sent: {json.dumps(payload, indent=2)}")
+
     for attempt in range(1, MAX_API_RETRIES + 1):
+        logger.info(f"  START: {log_prefix} (Attempt {attempt}/{MAX_API_RETRIES})")
+        response = None
         try:
-            logger.info(f"  🚀 {log_prefix} (Attempt {attempt}/{MAX_API_RETRIES})")
             response = requests.post(full_url, json=payload, timeout=REQUEST_TIMEOUT)
             response.raise_for_status()
-            data = response.json()
-            if data.get("status") == "submitted" and data.get("prompt_id"):
-                logger.info(f"  ✅ {log_prefix} submitted. Prompt ID: {data['prompt_id']}")
-                return data.get("prompt_id")
-            logger.warning(f"  ⚠️ {log_prefix} failed: {data}")
+            response_data = response.json()
+
+            logger.info(f"  SUCCESS: {log_prefix} submitted successfully (HTTP {response.status_code})")
+            api_status = response_data.get('status', 'N/A')
+            api_error = response_data.get('error', None)
+            comfy_prompt_id = response_data.get('prompt_id', 'N/A')
+
+            logger.info(f"     API Server Status: '{api_status}'")
+            logger.info(f"     ComfyUI Prompt ID: '{comfy_prompt_id}'")
+            if api_error:
+                logger.warning(f"     API Server reported error: {api_error}")
+
+            if api_status == 'submitted' and comfy_prompt_id and comfy_prompt_id != 'N/A':
+                return comfy_prompt_id
+            else:
+                logger.error(f"  ERROR: {log_prefix} API returned incomplete response: status='{api_status}', prompt_id='{comfy_prompt_id}'")
+                if attempt < MAX_API_RETRIES:
+                    logger.info(f"     Retrying in {API_RETRY_DELAY} seconds...")
+                    time.sleep(API_RETRY_DELAY)
+
+        except requests.RequestException as req_e:
+            logger.error(f"  ERROR: {log_prefix} request failed (Attempt {attempt}/{MAX_API_RETRIES}): {req_e}")
+            if response and hasattr(response, 'text'):
+                logger.error(f"     Response body: {response.text[:200]}...")
+            if attempt < MAX_API_RETRIES:
+                logger.info(f"     Retrying in {API_RETRY_DELAY} seconds...")
+                time.sleep(API_RETRY_DELAY)
         except Exception as e:
-            logger.warning(f"  ⚠️ {log_prefix} error on attempt {attempt}: {e}")
-        time.sleep(API_RETRY_DELAY)
-    logger.error(f"  ❌ {log_prefix} failed after {MAX_API_RETRIES} attempts")
+            logger.error(f"  ERROR: {log_prefix} unexpected error (Attempt {attempt}/{MAX_API_RETRIES}): {e}", exc_info=True)
+            if attempt < MAX_API_RETRIES:
+                logger.info(f"     Retrying in {API_RETRY_DELAY} seconds...")
+                time.sleep(API_RETRY_DELAY)
+
+    logger.error(f"  ERROR: {log_prefix} failed after {MAX_API_RETRIES} attempts. Check API server logs.")
     return None
 
 # --- Helper: Wait for Video Jobs to Finish ---
@@ -814,11 +860,11 @@ def start_telegram_approval(collected_images):
     logger.info("📱 Starting Telegram approval process...")
     
     if not SEND_TELEGRAM_SCRIPT.exists():
-        logger.error(f"❌ Telegram script not found: {SEND_TELEGRAM_SCRIPT}")
+        logger.error(f"ERROR: Telegram script not found: {SEND_TELEGRAM_SCRIPT}")
         return False
     
     if not collected_images:
-        logger.error("❌ No images to send for approval")
+        logger.error("ERROR: No images to send for approval")
         return False
     
     try:
@@ -835,14 +881,14 @@ def start_telegram_approval(collected_images):
         # Start telegram approval process
         process = subprocess.Popen(args, cwd=str(SCRIPT_DIR))
         
-        logger.info("✅ Telegram approval process started")
+        logger.info("SUCCESS: Telegram approval process started")
         logger.info(f"   Check your Telegram bot for approval messages")
         logger.info(f"   Approvals will be saved to: {TELEGRAM_APPROVALS_JSON}")
         
         return process
         
     except Exception as e:
-        logger.error(f"❌ Failed to start Telegram approval: {e}")
+        logger.error(f"ERROR: Failed to start Telegram approval: {e}")
         return False
 
 # --- Function: Wait for Approvals ---
@@ -856,7 +902,7 @@ def wait_for_approvals(current_run_images=None):
     current_image_paths = set()
     if current_run_images:
         current_image_paths = {str(Path(img).resolve()) for img in current_run_images}
-        logger.info(f"🎯 Looking for approvals of {len(current_image_paths)} current run images")
+        logger.info(f"TARGET: Looking for approvals of {len(current_image_paths)} current run images")
     
     try:
         while True:
@@ -878,18 +924,18 @@ def wait_for_approvals(current_run_images=None):
                     approved_count = len([img for img in current_run_approvals.values() if img.get('status') == 'approve'])
                     rejected_count = len([img for img in current_run_approvals.values() if img.get('status') == 'reject'])
                     
-                    logger.info(f"📊 Current run status: {approved_count} approved, {rejected_count} rejected, {total_current_images - approved_count - rejected_count} pending")
+                    logger.info(f"STATS: Current run status: {approved_count} approved, {rejected_count} rejected, {total_current_images - approved_count - rejected_count} pending")
                     
                     # Check if all current run images have been reviewed
                     if total_current_images > 0 and (approved_count + rejected_count) == total_current_images:
-                        logger.info(f"✅ All current run images reviewed! {approved_count} approved, {rejected_count} rejected")
+                        logger.info(f"SUCCESS: All current run images reviewed! {approved_count} approved, {rejected_count} rejected")
                         logger.info(f"[Main] All Telegram images reviewed! {approved_count} approved, {rejected_count} rejected")
-                        print(f"[Main] ✅ All Telegram images reviewed! {approved_count} approved, {rejected_count} rejected")
+                        print(f"[Main] SUCCESS: All Telegram images reviewed! {approved_count} approved, {rejected_count} rejected")
                         print(f"[Main] Proceeding to video generation with {approved_count} approved images...")
                         return current_run_approvals
                     elif approved_count > 0 and not current_run_images:
                         # Fallback for older behavior if current_run_images not provided
-                        logger.info(f"✅ Found {approved_count} approved images!")
+                        logger.info(f"SUCCESS: Found {approved_count} approved images!")
                         return approvals
                     elif total_current_images > 0:
                         # Still waiting for more reviews
@@ -903,7 +949,7 @@ def wait_for_approvals(current_run_images=None):
             time.sleep(5)
             
     except KeyboardInterrupt:
-        logger.info("⚠️ Approval skipped by user. Using all generated images.")
+        logger.info("WARNING: Approval skipped by user. Using all generated images.")
         return None
 
 # --- Function: Copy Approved Images ---
@@ -915,7 +961,7 @@ def copy_approved_images(all_images_dir, approved_images_dir, approvals):
         image_files = list(all_images_dir.glob("*.png")) + list(all_images_dir.glob("*.jpg"))
         for img_file in image_files:
             shutil.copy2(img_file, approved_images_dir / img_file.name)
-        logger.info(f"✅ Copied {len(image_files)} images for video generation")
+        logger.info(f"SUCCESS: Copied {len(image_files)} images for video generation")
         return len(image_files)
     
     # Copy only approved images
@@ -931,13 +977,13 @@ def copy_approved_images(all_images_dir, approved_images_dir, approvals):
             else:
                 logger.warning(f"   Approved image not found: {src_path}")
     
-    logger.info(f"✅ Copied {approved_count} approved images for video generation")
+    logger.info(f"SUCCESS: Copied {approved_count} approved images for video generation")
     return approved_count
 
 # --- Main Function ---
 def main():
     """Main execution flow for music pipeline"""
-    logger.info("🎵 Starting Music-Based Image Generation Pipeline")
+    logger.info("MUSIC: Starting Music-Based Image Generation Pipeline")
     logger.info("=" * 80)
     
     try:
@@ -947,13 +993,13 @@ def main():
         # Step 2: Find latest music run
         music_folder = find_latest_music_run()
         if not music_folder:
-            logger.error("❌ No music run folder found. Run audio_to_prompts_generator.py first!")
+            logger.error("ERROR: No music run folder found. Run audio_to_prompts_generator.py first!")
             return False
         
         # Step 3: Load music prompts
         prompts, metadata = load_music_prompts(music_folder)
         if not prompts:
-            logger.error("❌ Failed to load music prompts")
+            logger.error("ERROR: Failed to load music prompts")
             return False
         
         # Step 4: Create output directory
@@ -962,7 +1008,7 @@ def main():
         # Step 5: Start API server
         api_process = start_api_server(config)
         if not api_process:
-            logger.error("❌ Failed to start API server")
+            logger.error("ERROR: Failed to start API server")
             return False
         
         try:
@@ -973,7 +1019,7 @@ def main():
             generation_requests = generate_images_from_music(config, prompts, output_run_dir, all_images_dir)
             
             if not generation_requests:
-                logger.error("❌ No images were submitted for generation")
+                logger.error("ERROR: No images were submitted for generation")
                 return False
             
             # Step 7: Wait for generation completion with prompt ID tracking
@@ -983,7 +1029,7 @@ def main():
                 # Step 8: Collect generated images and start Telegram approval
                 collected_images = collect_generated_images_from_history(generation_requests, config['comfyui_api_url'])
                 if not collected_images:
-                    logger.error("❌ No generated images found to send for approval")
+                    logger.error("ERROR: No generated images found to send for approval")
                     return False
                 
                 # Log what images were generated
@@ -1007,7 +1053,7 @@ def main():
                                     if isinstance(info, dict) and info.get("status") == "approve"]
                     
                     # Log approved images
-                    logger.info(f"✅ Approved Images Summary ({len(approved_paths)} total):")
+                    logger.info(f"SUCCESS: Approved Images Summary ({len(approved_paths)} total):")
                     for i, img_path in enumerate(approved_paths, 1):
                         img_name = Path(img_path).name
                         logger.info(f"   {i}. {img_name}")
@@ -1044,7 +1090,7 @@ def main():
                     logger.info(f"[Main] Final result: {len(approved_image_details)} images approved for video generation.")
                     
                     # Log final video generation details
-                    logger.info(f"🎬 Video Generation Mapping:")
+                    logger.info(f"VIDEO: Video Generation Mapping:")
                     for i, item in enumerate(approved_image_details, 1):
                         img_name = Path(item["approved_image_path"]).name
                         segment = item["original_index"]
@@ -1073,6 +1119,18 @@ def main():
                     
                     logger.info(f"Finished copying {copied_count}/{len(approved_image_details)} approved images.")
                     
+                    # Also copy with original simple filenames for easier access
+                    for idx, approved_info in enumerate(approved_image_details):
+                        try:
+                            source_img_path = Path(approved_info['approved_image_path'])
+                            simple_dest_path = approved_images_dir / source_img_path.name
+                            if not simple_dest_path.exists():  # Don't overwrite if already exists
+                                shutil.copyfile(source_img_path, simple_dest_path)
+                                logger.info(f"  Also copied with original name: '{source_img_path.name}'")
+                        except Exception as e:
+                            logger.debug(f"Failed to copy simple name for image {idx+1}: {e}")
+                    
+                    
                     # --- STAGE 2: Submit Video Generation Jobs (for approved images) ---
                     if not approved_image_details:
                         logger.info("\n--- STAGE 2: No approved images for video generation. Skipping video submission. ---")
@@ -1081,8 +1139,12 @@ def main():
                         
                         # Setup temp directory
                         temp_start_image_dir = COMFYUI_INPUT_DIR_BASE / TEMP_VIDEO_START_SUBDIR
-                        temp_start_image_dir.mkdir(parents=True, exist_ok=True)
-                        logger.info(f"Ensured temporary directory for video start images: {temp_start_image_dir}")
+                        try:
+                            temp_start_image_dir.mkdir(parents=True, exist_ok=True)
+                            logger.info(f"Ensured temporary directory for video start images: {temp_start_image_dir}")
+                        except Exception as e:
+                            logger.critical(f"Failed to create temp video start directory: {e}", exc_info=True)
+                            sys.exit(1)
                         
                         video_progress_bar = tqdm(approved_image_details, desc="Submitting Videos")
                         items_successfully_sent_video = 0
@@ -1099,7 +1161,7 @@ def main():
                             video_filename_prefix = f"{orig_index:03d}_batch{batch_index}_video_{'swapped' if face_filename_only else 'raw'}"
                             
                             video_progress_bar.set_description(f"Video Req {approved_idx+1}/{len(approved_image_details)} (OrigIdx {orig_index})")
-                            logger.info(f"\n🎬 Preparing Video Request [{approved_idx+1}/{len(approved_image_details)}] "
+                            logger.info(f"\nVIDEO: Preparing Video Request [{approved_idx+1}/{len(approved_image_details)}] "
                                         f"(Original Index: {orig_index}, Batch Index: {batch_index})")
                             logger.info(f"   Using image: {approved_image_path}")
                             
@@ -1130,7 +1192,7 @@ def main():
                             logger.info(f"      - Segment: {orig_index}")
                             
                             comfy_video_prompt_id = trigger_generation(
-                                config['api_server_url'], "generate_video", enhanced_prompt, orig_index,
+                                config['api_server_url'], "generate_video", enhanced_prompt, str(orig_index),
                                 video_output_subfolder, video_filename_prefix,
                                 video_start_image=temp_start_image_comfy_path_str
                             )
@@ -1154,20 +1216,76 @@ def main():
                         video_progress_bar.close()
                         logger.info(f"--- STAGE 2: {items_successfully_sent_video}/{len(approved_image_details)} Video Generation Requests Submitted ---")
 
-                        # --- STAGE 2.5: Wait for Video Jobs (Optional) ---
-                        video_prompt_ids = [job['video_prompt_id'] for job in all_submitted_video_jobs if job['video_prompt_id']]
-                        video_status = wait_for_video_jobs(video_prompt_ids, config['comfyui_api_url']) if video_prompt_ids else {}
+                        # --- STAGE 2.5: Poll for Video Jobs Completion (Optional) ---
+                        video_ids_to_poll = [job['video_prompt_id'] for job in all_submitted_video_jobs if job['video_prompt_id']]
+                        if video_ids_to_poll:
+                            logger.info(f"\n--- STAGE 2.5: Waiting for {len(video_ids_to_poll)} Video Jobs to Complete (Polling /history) ---")
+                            video_polling_progress = tqdm(total=len(video_ids_to_poll), desc="Polling Videos")
+                            start_poll_time_video = datetime.now()
+                            overall_video_timeout = POLLING_TIMEOUT_VIDEO * len(video_ids_to_poll)
+                            active_video_poll_ids = set(video_ids_to_poll)
+                            completed_video_count = 0
+
+                            while active_video_poll_ids and (datetime.now() - start_poll_time_video < timedelta(seconds=overall_video_timeout)):
+                                completed_in_pass = set()
+                                for prompt_id in list(active_video_poll_ids):
+                                    history_data = check_comfyui_job_status(config['comfyui_api_url'], prompt_id)
+                                    if history_data:
+                                        logger.info(f"   SUCCESS: Video job with Prompt ID {prompt_id} confirmed complete.")
+                                        for job in all_submitted_video_jobs:
+                                            if job['video_prompt_id'] == prompt_id:
+                                                job['video_job_status'] = 'completed'
+                                                break
+                                        completed_in_pass.add(prompt_id)
+                                        completed_video_count = len(video_ids_to_poll) - len(active_video_poll_ids) + len(completed_in_pass)
+                                        video_polling_progress.n = completed_video_count
+                                        video_polling_progress.refresh()
+
+                                active_video_poll_ids -= completed_in_pass
+
+                                if not active_video_poll_ids:
+                                    logger.info("   SUCCESS: All submitted video jobs appear complete.")
+                                    break
+
+                                elapsed_time_total = (datetime.now() - start_poll_time_video).total_seconds()
+                                video_polling_progress.set_description(
+                                    f"Polling Videos ({completed_video_count}/{len(video_ids_to_poll)} done | {int(elapsed_time_total)}s)"
+                                )
+                                time.sleep(POLLING_INTERVAL * 2)
+
+                            video_polling_progress.close()
+                            remaining_ids = len(active_video_poll_ids)
+                            if remaining_ids > 0:
+                                logger.warning(
+                                    f"--- STAGE 2.5: Video polling finished, but {remaining_ids}/{len(video_ids_to_poll)} jobs did not return history within timeout. ---"
+                                )
+                                for job in all_submitted_video_jobs:
+                                    if job['video_prompt_id'] in active_video_poll_ids:
+                                        job['video_job_status'] = 'polling_timeout'
+                            else:
+                                logger.info(f"--- STAGE 2.5: Finished Polling Videos ---")
+                        else:
+                            logger.info("\n--- STAGE 2.5: No successful video submissions to poll. ---")
                         
-                        # Cleanup temp directory
+                        # Create video_status for compatibility
+                        video_status = {job['video_prompt_id']: job['video_job_status'] for job in all_submitted_video_jobs if job['video_prompt_id']}
+                        
+                        # --- STAGE 3: Cleanup Temp Files ---
+                        logger.info(f"\n--- STAGE 3: Cleaning up temporary start images... ---")
                         try:
                             if temp_start_image_dir.exists():
+                                logger.info(f"Attempting to remove temp directory: {temp_start_image_dir}")
                                 shutil.rmtree(temp_start_image_dir)
-                                logger.info(f"🧹 Cleaned up temp directory: {temp_start_image_dir}")
+                                if not temp_start_image_dir.exists():
+                                    logger.info(f"SUCCESS: Successfully removed temp start image directory.")
+                                else:
+                                    logger.warning(f"shutil.rmtree completed but directory still exists: {temp_start_image_dir}")
+                            else:
+                                logger.info("Temp start image directory did not exist (or already cleaned).")
+                        except PermissionError:
+                            logger.error(f"Error during temp image cleanup: Permission denied trying to remove {temp_start_image_dir}.")
                         except Exception as e:
-                            logger.warning(f"⚠️ Failed to cleanup temp directory: {e}")
-                        
-                        # Set video variables for summary
-                        video_prompt_ids = [job['video_prompt_id'] for job in all_submitted_video_jobs if job['video_prompt_id']]
+                            logger.error(f"Error during final temp image cleanup: {e}", exc_info=True)
                     
                     # If no videos were processed, set empty defaults
                     if 'all_submitted_video_jobs' not in locals():
@@ -1179,22 +1297,22 @@ def main():
                     logger.info("🎉 MUSIC PIPELINE COMPLETED SUCCESSFULLY!")
                     logger.info("=" * 80)
                     logger.info(f"📁 Output Directory: {output_run_dir}")
-                    logger.info(f"🎵 Music Source: {music_folder.name}")
+                    logger.info(f"MUSIC: Music Source: {music_folder.name}")
                     logger.info(f"🎨 Total Images Generated: {len(collected_images)}")
-                    logger.info(f"✅ Approved Images: {len(approved_image_details) if 'approved_image_details' in locals() else 0}")
-                    logger.info(f"🎬 Videos Submitted: {len(all_submitted_video_jobs)}")
+                    logger.info(f"SUCCESS: Approved Images: {len(approved_image_details) if 'approved_image_details' in locals() else 0}")
+                    logger.info(f"VIDEO: Videos Submitted: {len(all_submitted_video_jobs)}")
                     completed_videos = sum(1 for s in video_status.values() if s == 'completed')
                     if video_status:
                         logger.info(f"🎞️  Videos Completed: {completed_videos}")
-                    logger.info(f"📝 Log File: {log_file}")
+                    logger.info(f"LOG: Log File: {log_file}")
                     logger.info("=" * 80)
 
                     return True
                 else:
-                    logger.error("❌ Failed to start Telegram approval")
+                    logger.error("ERROR: Failed to start Telegram approval")
                     return False
             else:
-                logger.error("❌ Image generation incomplete")
+                logger.error("ERROR: Image generation incomplete")
                 return False
                 
         finally:
@@ -1205,13 +1323,13 @@ def main():
                 time.sleep(2)
                 if api_process.poll() is None:
                     api_process.kill()
-                logger.info("✅ API server stopped")
+                logger.info("SUCCESS: API server stopped")
         
     except KeyboardInterrupt:
-        logger.info("⚠️ Pipeline interrupted by user")
+        logger.info("WARNING: Pipeline interrupted by user")
         return False
     except Exception as e:
-        logger.error(f"❌ Pipeline failed with error: {e}", exc_info=True)
+        logger.error(f"ERROR: Pipeline failed with error: {e}", exc_info=True)
         return False
 
 if __name__ == "__main__":

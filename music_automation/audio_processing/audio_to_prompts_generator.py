@@ -26,12 +26,17 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 import base64
 
-# Load environment variables from .env file
-def load_env_file(env_path: str = ".env"):
+# Load environment variables from parent .env file
+def load_env_file(env_path: str = None):
     """Load environment variables from .env file"""
-    env_file = Path(env_path)
-    if env_file.exists():
-        with open(env_file, 'r') as f:
+    if env_path is None:
+        # Use parent directory .env file
+        env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+    else:
+        env_path = Path(env_path)
+    
+    if env_path.exists():
+        with open(env_path, 'r') as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith('#') and '=' in line:
@@ -39,9 +44,9 @@ def load_env_file(env_path: str = ".env"):
                     # Remove quotes if present
                     value = value.strip('"').strip("'")
                     os.environ[key] = value
-        print(f"✅ Loaded environment variables from {env_path}")
+        print(f"SUCCESS: Loaded environment variables from {env_path}")
     else:
-        print(f"⚠️ .env file not found at {env_path}")
+        print(f"WARNING: .env file not found at {env_path}")
 
 # Load environment variables at startup
 load_env_file()
@@ -52,7 +57,7 @@ try:
     import google.generativeai.types as genai_types
     from google.generativeai.types import HarmCategory, HarmBlockThreshold
 except ImportError:
-    print("❌ Missing google-generativeai package. Install with: pip install google-generativeai")
+    print("ERROR: Missing google-generativeai package. Install with: pip install google-generativeai")
     sys.exit(1)
 
 # =============================================================================
@@ -67,7 +72,44 @@ OUTPUT_BASE_DIR = Path(r"H:\dancers_content")
 MODEL_NAME = "gemini-2.0-flash-exp"
 API_RETRY_COUNT = 3
 MAX_API_TIMEOUT = 300  # 5 minutes
-SEGMENT_DURATION = 5  # seconds
+
+# Segmentation Configuration (Optimization for efficiency)
+MAX_SEGMENTS = 15  # Maximum number of segments to generate (limits computation)
+MINIMUM_SEGMENT_DURATION = 5  # Minimum seconds per segment
+DEFAULT_SEGMENT_DURATION = 5  # Default for short songs
+
+# =============================================================================
+# SEGMENTATION OPTIMIZATION FUNCTIONS
+# =============================================================================
+
+def calculate_optimal_segmentation(total_duration: float) -> tuple[int, float]:
+    """
+    Calculate optimal number of segments and duration per segment.
+    
+    Args:
+        total_duration: Total song duration in seconds
+        
+    Returns:
+        tuple: (segment_count, segment_duration)
+    """
+    # For short songs (75 seconds or less), use 5-second intervals
+    max_duration_for_default = MAX_SEGMENTS * DEFAULT_SEGMENT_DURATION  # 75 seconds
+    
+    if total_duration <= max_duration_for_default:
+        # Use default 5-second segments, but don't exceed MAX_SEGMENTS
+        segment_count = min(MAX_SEGMENTS, int(total_duration // DEFAULT_SEGMENT_DURATION))
+        segment_duration = DEFAULT_SEGMENT_DURATION
+    else:
+        # For longer songs, calculate dynamic segment duration
+        segment_count = MAX_SEGMENTS
+        segment_duration = total_duration / MAX_SEGMENTS
+        
+        # Ensure we don't go below minimum duration
+        if segment_duration < MINIMUM_SEGMENT_DURATION:
+            segment_duration = MINIMUM_SEGMENT_DURATION
+            segment_count = int(total_duration // segment_duration)
+    
+    return segment_count, segment_duration
 
 # Expected JSON Schema for validation
 EXPECTED_JSON_SCHEMA = {
@@ -229,20 +271,20 @@ class JSONValidator:
         # Attempt to parse JSON
         try:
             parsed_data = json.loads(cleaned_text)
-            self.logger.info("✅ JSON parsing successful")
+            self.logger.info("SUCCESS: JSON parsing successful")
         except json.JSONDecodeError as e:
             error_msg = f"JSON decode error: {str(e)}"
-            self.logger.error(f"❌ {error_msg}")
+            self.logger.error(f"ERROR: {error_msg}")
             return None, [error_msg]
         
         # Validate structure
         is_valid, validation_errors = self.validate_json_structure(parsed_data)
         
         if is_valid:
-            self.logger.info("✅ JSON validation successful")
+            self.logger.info("SUCCESS: JSON validation successful")
             return parsed_data, []
         else:
-            self.logger.error(f"❌ JSON validation failed: {validation_errors}")
+            self.logger.error(f"ERROR: JSON validation failed: {validation_errors}")
             return parsed_data, validation_errors
 
 # =============================================================================
@@ -283,7 +325,7 @@ class GeminiAPIClient:
     
     def upload_audio_file(self, audio_path: Path) -> Optional[Any]:
         """Upload audio file to Gemini with progress tracking"""
-        self.api_logger.info(f"📤 Uploading audio file: {audio_path.name}")
+        self.api_logger.info(f"UPLOAD: Uploading audio file: {audio_path.name}")
         
         try:
             # Check file size
@@ -292,10 +334,10 @@ class GeminiAPIClient:
             
             # Upload file
             uploaded_file = genai.upload_file(path=str(audio_path), display_name=audio_path.name)
-            self.api_logger.info(f"✅ Upload initiated. File ID: {uploaded_file.name}")
+            self.api_logger.info(f"SUCCESS: Upload initiated. File ID: {uploaded_file.name}")
             
             # Wait for processing
-            self.api_logger.info("⏳ Waiting for file processing...")
+            self.api_logger.info("WAIT: Waiting for file processing...")
             start_time = time.time()
             
             while True:
@@ -303,26 +345,26 @@ class GeminiAPIClient:
                 elapsed = time.time() - start_time
                 
                 if file_status.state.name == "ACTIVE":
-                    self.api_logger.info(f"✅ File processing complete ({elapsed:.1f}s)")
+                    self.api_logger.info(f"SUCCESS: File processing complete ({elapsed:.1f}s)")
                     return file_status
                 elif file_status.state.name == "FAILED":
-                    self.api_logger.error("❌ File processing failed")
+                    self.api_logger.error("ERROR: File processing failed")
                     return None
                 elif elapsed > MAX_API_TIMEOUT:
-                    self.api_logger.error("❌ File processing timeout")
+                    self.api_logger.error("ERROR: File processing timeout")
                     return None
                 
                 time.sleep(5)
                 
         except Exception as e:
-            self.api_logger.error(f"❌ Upload failed: {str(e)}")
+            self.api_logger.error(f"ERROR: Upload failed: {str(e)}")
             self.api_logger.debug(traceback.format_exc())
             return None
     
-    def create_analysis_prompt(self) -> str:
-        """Create the structured prompt for deity-focused audio analysis"""
+    def create_analysis_prompt(self, segment_count: int, segment_duration: float) -> str:
+        """Create the structured prompt for deity-focused audio analysis with dynamic segmentation"""
         return f"""
-Analyze this devotional audio file and generate deity-focused visual prompts for every 5-second interval, optimized for Flux image generation.
+Analyze this devotional audio file and generate deity-focused visual prompts for exactly {segment_count} segments distributed evenly across the entire song duration (approximately {segment_duration:.1f} seconds per segment), optimized for Flux image generation.
 
 STEP 1: Listen to the audio and identify the PRIMARY DEITY being worshipped (Shiva, Ganesha, Krishna, Hanuman, Durga, etc.)
 
@@ -335,7 +377,7 @@ Required JSON structure:
     "metadata": {{
         "song_file": "filename.mp3",
         "total_duration": 145.5,
-        "total_segments": 29,
+        "total_segments": {segment_count},
         "primary_deity": "Lord Shiva/Lord Ganesha/Lord Krishna/Lord Hanuman/Goddess Durga/etc.",
         "deity_attributes": ["cosmic dancer", "meditation master", "destroyer of evil", "lord of wisdom", "etc."],
         "consistent_theme": "All prompts focus on [DEITY NAME] with variations in pose, mood, and divine setting",
@@ -351,7 +393,7 @@ Required JSON structure:
         {{
             "segment_id": 1,
             "start_time": "00:00",
-            "end_time": "00:05",
+            "end_time": "{int(segment_duration):02d}:{int((segment_duration % 60)):02d}",
             "primary_prompt": "Photorealistic image of [DEITY NAME] in [specific pose/action] with [divine attributes], [setting/background], [mood/energy matching audio], 16:9 aspect ratio, cinematic lighting, engaging composition perfect for YouTube thumbnail",
             "deity_pose": "meditation/dancing/blessing/cosmic form/etc.",
             "deity_mood": "serene/powerful/compassionate/fierce/joyful",
@@ -395,20 +437,21 @@ REQUIREMENTS for each prompt:
 4. VISUALLY STRIKING and devotionally engaging
 5. Vary pose, mood, and setting while keeping same deity
 6. Match audio intensity with deity's expression/pose
-7. 5-second intervals only
+7. Use exactly {segment_count} segments distributed evenly across song duration
 8. Include specific deity attributes in EVERY prompt
 
 Respond with ONLY the JSON object, no other text or formatting.
 """
     
-    def generate_prompts_with_retry(self, audio_file: Any, output_dir: Path) -> Optional[Dict]:
+    def generate_prompts_with_retry(self, audio_file: Any, output_dir: Path, segment_count: int, segment_duration: float) -> Optional[Dict]:
         """Generate prompts with retry logic and validation"""
-        self.api_logger.info("🚀 Starting prompt generation with retry logic")
+        self.api_logger.info("START: Starting prompt generation with retry logic")
+        self.api_logger.info(f"STATS: Segmentation: {segment_count} segments of {segment_duration:.1f}s each")
         
-        prompt_text = self.create_analysis_prompt()
+        prompt_text = self.create_analysis_prompt(segment_count, segment_duration)
         
         for attempt in range(1, API_RETRY_COUNT + 1):
-            self.api_logger.info(f"📝 Attempt {attempt}/{API_RETRY_COUNT}")
+            self.api_logger.info(f"LOG: Attempt {attempt}/{API_RETRY_COUNT}")
             
             try:
                 # Create the content with audio file
@@ -418,7 +461,7 @@ Respond with ONLY the JSON object, no other text or formatting.
                 ]
                 
                 # Generate response
-                self.api_logger.info("⏳ Sending request to Gemini...")
+                self.api_logger.info("SEND: Sending request to Gemini...")
                 start_time = time.time()
                 
                 response = self.model.generate_content(
@@ -428,13 +471,13 @@ Respond with ONLY the JSON object, no other text or formatting.
                 )
                 
                 elapsed = time.time() - start_time
-                self.api_logger.info(f"✅ Received response ({elapsed:.1f}s)")
+                self.api_logger.info(f"SUCCESS: Received response ({elapsed:.1f}s)")
                 
                 # Get response text
                 response_text = response.text if hasattr(response, 'text') else ""
                 
                 if not response_text:
-                    self.api_logger.warning("⚠️ Empty response received")
+                    self.api_logger.warning("WARNING: Empty response received")
                     continue
                 
                 # Save raw response for debugging
@@ -442,20 +485,20 @@ Respond with ONLY the JSON object, no other text or formatting.
                 with open(raw_file, 'w', encoding='utf-8') as f:
                     f.write(response_text)
                 
-                self.api_logger.info(f"💾 Raw response saved: {raw_file}")
+                self.api_logger.info(f"SAVE: Raw response saved: {raw_file}")
                 
                 # Parse and validate JSON
                 parsed_data, errors = self.json_validator.parse_and_validate(response_text)
                 
                 if parsed_data and not errors:
-                    self.api_logger.info("✅ Prompt generation successful!")
+                    self.api_logger.info("SUCCESS: Prompt generation successful!")
                     return parsed_data
                 else:
-                    self.api_logger.warning(f"⚠️ Validation failed: {errors}")
+                    self.api_logger.warning(f"WARNING: Validation failed: {errors}")
                     
                     # If we have more attempts, try to fix with re-prompt
                     if attempt < API_RETRY_COUNT:
-                        self.api_logger.info("🔁 Attempting to fix with re-prompt...")
+                        self.api_logger.info("RETRY: Attempting to fix with re-prompt...")
                         fix_result = self._retry_with_format_correction(
                             content, response_text, attempt, output_dir
                         )
@@ -463,23 +506,23 @@ Respond with ONLY the JSON object, no other text or formatting.
                             return fix_result
             
             except Exception as e:
-                self.api_logger.error(f"❌ Attempt {attempt} failed: {str(e)}")
+                self.api_logger.error(f"ERROR: Attempt {attempt} failed: {str(e)}")
                 self.api_logger.debug(traceback.format_exc())
             
             # Wait before retry
             if attempt < API_RETRY_COUNT:
                 wait_time = attempt * 5
-                self.api_logger.info(f"⏳ Waiting {wait_time}s before retry...")
+                self.api_logger.info(f"WAIT: Waiting {wait_time}s before retry...")
                 time.sleep(wait_time)
         
-        self.api_logger.error("❌ All attempts failed")
+        self.api_logger.error("ERROR: All attempts failed")
         return None
     
     def _retry_with_format_correction(self, original_content: List, 
                                     failed_response: str, attempt: int, 
                                     output_dir: Path) -> Optional[Dict]:
         """Attempt to fix JSON format issues with a correction prompt"""
-        self.api_logger.info("🔧 Attempting format correction...")
+        self.api_logger.info("CONFIG: Attempting format correction...")
         
         correction_prompt = f"""
 The previous response had formatting issues. Please regenerate the EXACT same content but ensure:
@@ -519,13 +562,13 @@ Generate ONLY the corrected JSON object:
                 parsed_data, errors = self.json_validator.parse_and_validate(response_text)
                 
                 if parsed_data and not errors:
-                    self.api_logger.info("✅ Format correction successful!")
+                    self.api_logger.info("SUCCESS: Format correction successful!")
                     return parsed_data
                 else:
-                    self.api_logger.warning(f"⚠️ Correction failed: {errors}")
+                    self.api_logger.warning(f"WARNING: Correction failed: {errors}")
         
         except Exception as e:
-            self.api_logger.error(f"❌ Format correction error: {str(e)}")
+            self.api_logger.error(f"ERROR: Format correction error: {str(e)}")
         
         return None
 
@@ -541,10 +584,10 @@ class AudioProcessor:
     
     def find_latest_mp3(self, songs_dir: Path) -> Optional[Path]:
         """Find the most recent MP3 file in the songs directory"""
-        self.logger.info(f"🔍 Searching for MP3 files in: {songs_dir}")
+        self.logger.info(f"SEARCH: Searching for MP3 files in: {songs_dir}")
         
         if not songs_dir.exists():
-            self.logger.error(f"❌ Songs directory not found: {songs_dir}")
+            self.logger.error(f"ERROR: Songs directory not found: {songs_dir}")
             return None
         
         # Find all MP3 files
@@ -552,7 +595,7 @@ class AudioProcessor:
         self.logger.info(f"Found {len(mp3_files)} MP3 files")
         
         if not mp3_files:
-            self.logger.error("❌ No MP3 files found")
+            self.logger.error("ERROR: No MP3 files found")
             return None
         
         # Sort by modification time (newest first)
@@ -562,7 +605,7 @@ class AudioProcessor:
         file_size_mb = latest_file.stat().st_size / (1024 * 1024)
         mod_time = datetime.fromtimestamp(latest_file.stat().st_mtime)
         
-        self.logger.info(f"✅ Latest MP3: {latest_file.name}")
+        self.logger.info(f"SUCCESS: Latest MP3: {latest_file.name}")
         self.logger.info(f"   Size: {file_size_mb:.2f} MB")
         self.logger.info(f"   Modified: {mod_time}")
         
@@ -573,13 +616,13 @@ class AudioProcessor:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_dir = base_dir / f"Run_{timestamp}_music"
         
-        self.logger.info(f"📁 Creating output directory: {output_dir}")
+        self.logger.info(f"FOLDER: Creating output directory: {output_dir}")
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Create subdirectories
         (output_dir / "logs").mkdir(exist_ok=True)
         
-        self.logger.info(f"✅ Output directory created: {output_dir}")
+        self.logger.info(f"SUCCESS: Output directory created: {output_dir}")
         return output_dir
 
 # =============================================================================
@@ -607,7 +650,7 @@ class PerformanceMonitor:
         """Start performance monitoring"""
         self.start_time = time.time()
         self.stats["start_time"] = datetime.now().isoformat()
-        self.logger.info("📊 Performance monitoring started")
+        self.logger.info("STATS: Performance monitoring started")
     
     def log_api_call(self):
         """Log an API call"""
@@ -637,7 +680,7 @@ class PerformanceMonitor:
             self.stats["total_duration"] = f"{duration:.2f}s"
             self.stats["success_rate"] = "100%" if success else f"{(1-len(self.stats['errors'])/max(1,self.stats['api_calls']))*100:.1f}%"
         
-        self.logger.info(f"📊 Monitoring finished - Duration: {self.stats.get('total_duration', 'N/A')}")
+        self.logger.info(f"STATS: Monitoring finished - Duration: {self.stats.get('total_duration', 'N/A')}")
         return self.stats
 
 # =============================================================================
@@ -655,7 +698,7 @@ class AudioToPromptsGenerator:
     
     def run(self) -> bool:
         """Main execution flow"""
-        print("🎵 Audio to Visual Prompts Generator")
+        print("MUSIC: Audio to Visual Prompts Generator")
         print("=" * 50)
         
         try:
@@ -664,7 +707,7 @@ class AudioToPromptsGenerator:
             latest_mp3 = audio_processor.find_latest_mp3(SONGS_DIR)
             
             if not latest_mp3:
-                print("❌ No MP3 file found!")
+                print("ERROR: No MP3 file found!")
                 return False
             
             # Step 2: Create output directory
@@ -674,7 +717,9 @@ class AudioToPromptsGenerator:
             self.logger_manager = AudioToPromptsLogger(output_dir)
             main_logger = self.logger_manager.main_logger
             
-            main_logger.info("🚀 Starting Audio to Prompts Generation")
+            main_logger.info("START: Starting Audio to Prompts Generation (OPTIMIZED)")
+            main_logger.info(f"TARGET: Efficiency Mode: Maximum {MAX_SEGMENTS} segments regardless of song length")
+            main_logger.info(f"FAST: Resource Savings: Prevents excessive computation on long songs")
             main_logger.info(f"Input file: {latest_mp3}")
             main_logger.info(f"Output directory: {output_dir}")
             
@@ -692,23 +737,31 @@ class AudioToPromptsGenerator:
             self.performance_monitor.start_monitoring()
             
             # Step 6: Upload audio file
-            main_logger.info("📤 Uploading audio file to Gemini...")
+            main_logger.info("UPLOAD: Uploading audio file to Gemini...")
             uploaded_file = self.gemini_client.upload_audio_file(latest_mp3)
             
             if not uploaded_file:
-                main_logger.error("❌ Failed to upload audio file")
+                main_logger.error("ERROR: Failed to upload audio file")
                 return False
             
             self.performance_monitor.log_api_call()
             
-            # Step 7: Generate prompts
-            main_logger.info("🎨 Generating visual prompts...")
+            # Step 7: Calculate optimal segmentation
+            # Use MAX_SEGMENTS as target, let Gemini determine exact duration and adjust
+            segment_count = MAX_SEGMENTS
+            estimated_duration = segment_count * DEFAULT_SEGMENT_DURATION  # Rough estimate for prompt
+            
+            main_logger.info(f"TARGET: Target segmentation: {segment_count} segments (max efficiency)")
+            main_logger.info(f"STATS: This limits computation to {segment_count * 4} total images (manageable approval process)")
+            
+            # Step 8: Generate prompts
+            main_logger.info("PROMPTS: Generating visual prompts...")
             prompts_data = self.gemini_client.generate_prompts_with_retry(
-                uploaded_file, output_dir
+                uploaded_file, output_dir, segment_count, DEFAULT_SEGMENT_DURATION
             )
             
             if not prompts_data:
-                main_logger.error("❌ Failed to generate prompts")
+                main_logger.error("ERROR: Failed to generate prompts")
                 self.performance_monitor.log_error("Prompt generation failed")
                 return False
             
@@ -726,7 +779,7 @@ class AudioToPromptsGenerator:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(prompts_data, f, indent=2, ensure_ascii=False)
             
-            main_logger.info(f"✅ Prompts saved to: {output_file}")
+            main_logger.info(f"SUCCESS: Prompts saved to: {output_file}")
             
             # Step 10: Save performance stats
             stats_file = output_dir / "performance_stats.json"
@@ -739,7 +792,7 @@ class AudioToPromptsGenerator:
             return True
             
         except Exception as e:
-            error_msg = f"❌ Unexpected error: {str(e)}"
+            error_msg = f"ERROR: Unexpected error: {str(e)}"
             print(error_msg)
             if hasattr(self, 'logger_manager') and self.logger_manager:
                 self.logger_manager.main_logger.error(error_msg)
@@ -751,35 +804,37 @@ class AudioToPromptsGenerator:
     def _print_summary(self, prompts_data: Dict, output_dir: Path, stats: Dict):
         """Print execution summary"""
         print("\n" + "=" * 50)
-        print("📊 EXECUTION SUMMARY")
+        print("STATS: EXECUTION SUMMARY")
         print("=" * 50)
         
         metadata = prompts_data.get("metadata", {})
         segments = prompts_data.get("segments", [])
         
-        print(f"🎵 Song: {metadata.get('song_file', 'Unknown')}")
-        print(f"⏱️  Duration: {metadata.get('total_duration', 'Unknown')}s")
-        print(f"🎬 Segments: {len(segments)}")
-        print(f"📁 Output: {output_dir}")
-        print(f"⚡ Processing Time: {stats.get('total_duration', 'Unknown')}")
-        print(f"🎯 Success Rate: {stats.get('success_rate', 'Unknown')}")
-        print(f"🔄 API Calls: {stats.get('api_calls', 0)}")
-        print(f"🔁 Retries: {stats.get('retry_count', 0)}")
+        print(f"MUSIC: Song: {metadata.get('song_file', 'Unknown')}")
+        print(f"TIME: Duration: {metadata.get('total_duration', 'Unknown')}s")
+        print(f"VIDEO: Segments: {len(segments)} (STATS: Optimized: Limited to max {MAX_SEGMENTS} for efficiency)")
+        print(f"IMAGES: Total Images: {len(segments) * 4} (4 per segment)")
+        print(f"FAST: Computation Saved: {max(0, (int(metadata.get('total_duration', 0)) // 5 - len(segments)) * 4)} images avoided")
+        print(f"OUTPUT: Output: {output_dir}")
+        print(f"FAST: Processing Time: {stats.get('total_duration', 'Unknown')}")
+        print(f"TARGET: Success Rate: {stats.get('success_rate', 'Unknown')}")
+        print(f"API: API Calls: {stats.get('api_calls', 0)}")
+        print(f"RETRY: Retries: {stats.get('retry_count', 0)}")
         
-        print("\n📝 Generated Files:")
-        print(f"   • prompts.json ({len(segments)} segments)")
-        print(f"   • performance_stats.json")
-        print(f"   • logs/execution.log")
-        print(f"   • logs/gemini_api.log")
-        print(f"   • logs/json_parsing.log")
-        print(f"   • logs/performance.log")
+        print("\nLOG: Generated Files:")
+        print(f"   - prompts.json ({len(segments)} segments)")
+        print(f"   - performance_stats.json")
+        print(f"   - logs/execution.log")
+        print(f"   - logs/gemini_api.log")
+        print(f"   - logs/json_parsing.log")
+        print(f"   - logs/performance.log")
         
         if segments:
-            print(f"\n🎨 Sample Prompt (Segment 1):")
+            print(f"\nSample Prompt (Segment 1):")
             first_segment = segments[0]
             print(f"   {first_segment.get('primary_prompt', 'N/A')[:100]}...")
         
-        print("\n✅ Generation Complete!")
+        print("\nSUCCESS: Generation Complete!")
 
 # =============================================================================
 # CLI ENTRY POINT
@@ -792,17 +847,17 @@ def main():
         success = generator.run()
         
         if success:
-            print("\n🎉 Success! Check the output directory for results.")
+            print("\nSUCCESS: Generation completed! Check the output directory for results.")
             sys.exit(0)
         else:
-            print("\n💥 Generation failed. Check the logs for details.")
+            print("\nERROR: Generation failed. Check the logs for details.")
             sys.exit(1)
             
     except KeyboardInterrupt:
-        print("\n⚠️ Process interrupted by user")
+        print("\nWARNING: Process interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n💥 Fatal error: {str(e)}")
+        print(f"\nERROR: Fatal error: {str(e)}")
         print(traceback.format_exc())
         sys.exit(1)
 

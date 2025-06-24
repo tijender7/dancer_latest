@@ -108,17 +108,17 @@ def check_config_files():
     logger.info("Checking configuration files...")
     
     required_files = [
-        "config_music.json",
-        "api_server_v5_music.py", 
-        "main_automation_music.py",
-        "base_workflows/API_flux_and_reactor_without_faceswap.json"
+        ("config/config_music.json", SCRIPT_DIR.parent),
+        ("api_server_v5_music.py", SCRIPT_DIR), 
+        ("main_automation_music.py", SCRIPT_DIR),
+        ("config/base_workflows/API_flux_without_faceswap_music.json", SCRIPT_DIR.parent)
     ]
     
     missing_files = []
-    for file_name in required_files:
-        file_path = SCRIPT_DIR / file_name
+    for file_name, base_path in required_files:
+        file_path = base_path / file_name
         if not file_path.exists():
-            missing_files.append(file_name)
+            missing_files.append(str(file_path))
     
     if missing_files:
         logger.error("Missing required files:")
@@ -191,14 +191,14 @@ def run_music_pipeline():
 def print_banner():
     """Print startup banner"""
     print("\n" + "="*80)
-    print("🎵 MUSIC-BASED IMAGE & VIDEO GENERATION PIPELINE")
+    print("MUSIC: MUSIC-BASED IMAGE & VIDEO GENERATION PIPELINE")
     print("="*80)
     print("This pipeline will:")
-    print("1. 🔍 Validate system requirements")
-    print("2. 📝 Load music prompts from latest analysis")
+    print("1. SEARCH: Validate system requirements")
+    print("2. LOG: Load music prompts from latest analysis")
     print("3. 🎨 Generate images for each music segment")
     print("4. 📱 Provide Telegram approval interface")
-    print("5. 🎬 Prepare for video generation")
+    print("5. VIDEO: Prepare for video generation")
     print("="*80)
     print()
 
@@ -208,7 +208,7 @@ def print_summary(success: bool):
     if success:
         print("🎉 MUSIC PIPELINE COMPLETED SUCCESSFULLY!")
         print("="*80)
-        print("✅ What was accomplished:")
+        print("SUCCESS: What was accomplished:")
         print("   • Images generated for all music segments")
         print("   • Telegram approval process completed")  
         print("   • Approved images ready for video generation")
@@ -216,15 +216,15 @@ def print_summary(success: bool):
         print("📁 Check the output folder for results:")
         print(f"   {COMFYUI_OUTPUT_DIR_BASE}/Run_*_music_images/")
         print()
-        print("🎬 Next steps:")
+        print("VIDEO: Next steps:")
         print("   • Review approved images")
         print("   • Run video generation if desired")
         print("   • Upload content to social media")
     else:
         print("💥 MUSIC PIPELINE FAILED!")
         print("="*80)
-        print("❌ Please check the logs above for error details")
-        print("📝 Common issues:")
+        print("ERROR: Please check the logs above for error details")
+        print("LOG: Common issues:")
         print("   • ComfyUI not running (start with: python main.py)")
         print("   • No music prompts available (run: python audio_to_prompts_generator.py)")
         print("   • Missing dependencies (install with pip)")

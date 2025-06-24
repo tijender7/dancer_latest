@@ -880,3 +880,205 @@ UnicodeEncodeError: 'charmap' codec can't en...
 [2025-06-20 09:13:09] [INFO] [OK] COMPLETED: Beat Synchronization
 [2025-06-20 09:13:12] [INFO] [ROCKET] Starting Step: 4K Upscaling
 [2025-06-20 09:13:12] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\upscale_4k_parallel.py
+[2025-06-22 07:32:14] [INFO] ================================================================================
+[2025-06-22 07:32:14] [INFO] [MOVIE] STARTING COMPLETE DANCER CONTENT PIPELINE
+[2025-06-22 07:32:14] [INFO] ================================================================================
+[2025-06-22 07:32:14] [INFO] [ROCKET] Starting API server in background...
+[2025-06-22 07:32:14] [INFO]    API server PID: 21140
+[2025-06-22 07:32:14] [INFO]    Waiting for API server to initialize...
+[2025-06-22 07:32:22] [INFO] [OK] API server started successfully
+[2025-06-22 07:32:22] [INFO] [ROCKET] Starting Step: Content Generation
+[2025-06-22 07:32:22] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_without_faceswap.py
+[2025-06-22 09:08:26] [INFO] [OK] COMPLETED: Content Generation
+[2025-06-22 09:08:29] [INFO] [ROCKET] Starting Step: Beat Synchronization
+[2025-06-22 09:08:29] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\beat_sync_single.py
+[2025-06-22 09:14:03] [INFO] [OK] COMPLETED: Beat Synchronization
+[2025-06-22 09:14:06] [INFO] [ROCKET] Starting Step: 4K Upscaling
+[2025-06-22 09:14:06] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\upscale_4k_parallel.py
+[2025-06-22 10:08:25] [INFO] [OK] COMPLETED: 4K Upscaling
+[2025-06-22 10:08:28] [INFO] [ROCKET] Starting Step: Crop to Reels
+[2025-06-22 10:08:28] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\crop_to_reels.py
+[2025-06-22 10:12:16] [INFO] [OK] COMPLETED: Crop to Reels
+[2025-06-22 10:12:19] [INFO] [ROCKET] Starting Step: Viral Metadata Generation
+[2025-06-22 10:12:19] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\youtube_metadata_generator.py
+[2025-06-22 10:12:19] [ERROR] [ERROR] FAILED: Viral Metadata Generation
+[2025-06-22 10:12:19] [ERROR]    Exit code: 1
+[2025-06-22 10:12:19] [WARN] [WARN] Continuing despite optional step failure
+[2025-06-22 10:12:22] [INFO] [UPLOAD] Auto-upload disabled - videos ready for manual upload
+[2025-06-22 10:12:22] [INFO] [STOP] Stopping API server...
+[2025-06-22 10:12:22] [INFO] [OK] API server stopped gracefully
+[2025-06-22 10:12:22] [INFO] ================================================================================
+[2025-06-22 10:12:22] [INFO] [CHART] PIPELINE EXECUTION SUMMARY
+[2025-06-22 10:12:22] [INFO] ================================================================================
+[2025-06-22 10:12:22] [INFO] [CLOCK] Start Time: 2025-06-22 07:32:14
+[2025-06-22 10:12:22] [INFO] [CLOCK] End Time: 2025-06-22 10:12:22
+[2025-06-22 10:12:22] [INFO] [TIMER] Total Duration: 2:40:07
+[2025-06-22 10:12:22] [INFO] 
+[2025-06-22 10:12:22] [INFO] [OK] Completed Steps (4):
+[2025-06-22 10:12:22] [INFO]    [OK] Content Generation
+[2025-06-22 10:12:22] [INFO]    [OK] Beat Synchronization
+[2025-06-22 10:12:22] [INFO]    [OK] 4K Upscaling
+[2025-06-22 10:12:22] [INFO]    [OK] Crop to Reels
+[2025-06-22 10:12:22] [INFO] [ERROR] Failed Steps (1):
+[2025-06-22 10:12:22] [INFO]    [ERROR] Viral Metadata Generation
+[2025-06-22 10:12:22] [INFO] 
+[2025-06-22 10:12:22] [INFO] [WARN] PIPELINE PARTIALLY COMPLETED
+[2025-06-22 10:12:22] [INFO]    Core content generated but some final steps failed
+[2025-06-22 10:12:22] [INFO] ================================================================================
+[2025-06-23 07:04:10] [INFO] ================================================================================
+[2025-06-23 07:04:10] [INFO] [MOVIE] STARTING COMPLETE DANCER CONTENT PIPELINE
+[2025-06-23 07:04:10] [INFO] ================================================================================
+[2025-06-23 07:04:10] [INFO] [ROCKET] Starting API server in background...
+[2025-06-23 07:04:10] [INFO]    API server PID: 52768
+[2025-06-23 07:04:10] [INFO]    Waiting for API server to initialize...
+[2025-06-23 07:04:18] [INFO] [OK] API server started successfully
+[2025-06-23 07:04:18] [INFO] [ROCKET] Starting Step: Content Generation
+[2025-06-23 07:04:18] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_without_faceswap.py
+[2025-06-23 08:44:20] [INFO] [OK] COMPLETED: Content Generation
+[2025-06-23 08:44:23] [INFO] [ROCKET] Starting Step: Beat Synchronization
+[2025-06-23 08:44:23] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\beat_sync_single.py
+[2025-06-23 08:50:21] [INFO] [OK] COMPLETED: Beat Synchronization
+[2025-06-23 08:50:24] [INFO] [ROCKET] Starting Step: 4K Upscaling
+[2025-06-23 08:50:24] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\upscale_4k_parallel.py
+[2025-06-23 09:47:37] [INFO] [OK] COMPLETED: 4K Upscaling
+[2025-06-23 09:47:40] [INFO] [ROCKET] Starting Step: Crop to Reels
+[2025-06-23 09:47:40] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\crop_to_reels.py
+[2025-06-23 09:51:55] [INFO] [OK] COMPLETED: Crop to Reels
+[2025-06-23 09:51:58] [INFO] [ROCKET] Starting Step: Viral Metadata Generation
+[2025-06-23 09:51:58] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\youtube_metadata_generator.py
+[2025-06-23 09:51:58] [ERROR] [ERROR] FAILED: Viral Metadata Generation
+[2025-06-23 09:51:58] [ERROR]    Exit code: 1
+[2025-06-23 09:51:58] [WARN] [WARN] Continuing despite optional step failure
+[2025-06-23 09:52:01] [INFO] [UPLOAD] Auto-upload disabled - videos ready for manual upload
+[2025-06-23 09:52:01] [INFO] [STOP] Stopping API server...
+[2025-06-23 09:52:01] [INFO] [OK] API server stopped gracefully
+[2025-06-23 09:52:01] [INFO] ================================================================================
+[2025-06-23 09:52:01] [INFO] [CHART] PIPELINE EXECUTION SUMMARY
+[2025-06-23 09:52:01] [INFO] ================================================================================
+[2025-06-23 09:52:01] [INFO] [CLOCK] Start Time: 2025-06-23 07:04:10
+[2025-06-23 09:52:01] [INFO] [CLOCK] End Time: 2025-06-23 09:52:01
+[2025-06-23 09:52:01] [INFO] [TIMER] Total Duration: 2:47:51
+[2025-06-23 09:52:01] [INFO] 
+[2025-06-23 09:52:01] [INFO] [OK] Completed Steps (4):
+[2025-06-23 09:52:01] [INFO]    [OK] Content Generation
+[2025-06-23 09:52:01] [INFO]    [OK] Beat Synchronization
+[2025-06-23 09:52:01] [INFO]    [OK] 4K Upscaling
+[2025-06-23 09:52:01] [INFO]    [OK] Crop to Reels
+[2025-06-23 09:52:01] [INFO] [ERROR] Failed Steps (1):
+[2025-06-23 09:52:01] [INFO]    [ERROR] Viral Metadata Generation
+[2025-06-23 09:52:01] [INFO] 
+[2025-06-23 09:52:01] [INFO] [WARN] PIPELINE PARTIALLY COMPLETED
+[2025-06-23 09:52:01] [INFO]    Core content generated but some final steps failed
+[2025-06-23 09:52:01] [INFO] ================================================================================
+[2025-06-23 11:51:14] [INFO] ================================================================================
+[2025-06-23 11:51:14] [INFO] [MOVIE] STARTING COMPLETE DANCER CONTENT PIPELINE
+[2025-06-23 11:51:14] [INFO] ================================================================================
+[2025-06-23 11:51:14] [INFO] [ROCKET] Starting API server in background...
+[2025-06-23 11:51:14] [INFO]    API server PID: 21388
+[2025-06-23 11:51:14] [INFO]    Waiting for API server to initialize...
+[2025-06-23 11:51:22] [INFO] [OK] API server started successfully
+[2025-06-23 11:51:22] [INFO] [ROCKET] Starting Step: Content Generation
+[2025-06-23 11:51:22] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_without_faceswap.py
+[2025-06-23 13:50:45] [INFO] [STOP] Stopping API server...
+[2025-06-23 13:50:45] [INFO] [OK] API server stopped gracefully
+[2025-06-23 13:55:24] [INFO] ================================================================================
+[2025-06-23 13:55:24] [INFO] [MOVIE] STARTING COMPLETE DANCER CONTENT PIPELINE
+[2025-06-23 13:55:24] [INFO] ================================================================================
+[2025-06-23 13:55:24] [INFO] [ROCKET] Starting API server in background...
+[2025-06-23 13:55:25] [INFO]    API server PID: 60404
+[2025-06-23 13:55:25] [INFO]    Waiting for API server to initialize...
+[2025-06-23 13:55:33] [INFO] [OK] API server started successfully
+[2025-06-23 13:55:33] [INFO] [ROCKET] Starting Step: Content Generation
+[2025-06-23 13:55:33] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_without_faceswap.py
+[2025-06-23 15:54:15] [INFO] [OK] COMPLETED: Content Generation
+[2025-06-23 15:54:18] [INFO] [ROCKET] Starting Step: Beat Synchronization
+[2025-06-23 15:54:18] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\beat_sync_single.py
+[2025-06-23 15:54:21] [INFO] [OK] COMPLETED: Beat Synchronization
+[2025-06-23 15:54:24] [INFO] [ROCKET] Starting Step: 4K Upscaling
+[2025-06-23 15:54:24] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\upscale_4k_parallel.py
+[2025-06-23 15:54:24] [INFO] [OK] COMPLETED: 4K Upscaling
+[2025-06-23 15:54:27] [INFO] [ROCKET] Starting Step: Crop to Reels
+[2025-06-23 15:54:27] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\crop_to_reels.py
+[2025-06-23 15:54:27] [INFO] [OK] COMPLETED: Crop to Reels
+[2025-06-23 15:54:30] [INFO] [ROCKET] Starting Step: Viral Metadata Generation
+[2025-06-23 15:54:30] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\youtube_metadata_generator.py
+[2025-06-23 15:54:30] [ERROR] [ERROR] FAILED: Viral Metadata Generation
+[2025-06-23 15:54:30] [ERROR]    Exit code: 1
+[2025-06-23 15:54:30] [WARN] [WARN] Continuing despite optional step failure
+[2025-06-23 15:54:33] [INFO] [UPLOAD] Auto-upload disabled - videos ready for manual upload
+[2025-06-23 15:54:33] [INFO] [STOP] Stopping API server...
+[2025-06-23 15:54:33] [INFO] [OK] API server stopped gracefully
+[2025-06-23 15:54:33] [INFO] ================================================================================
+[2025-06-23 15:54:33] [INFO] [CHART] PIPELINE EXECUTION SUMMARY
+[2025-06-23 15:54:33] [INFO] ================================================================================
+[2025-06-23 15:54:33] [INFO] [CLOCK] Start Time: 2025-06-23 13:55:24
+[2025-06-23 15:54:33] [INFO] [CLOCK] End Time: 2025-06-23 15:54:33
+[2025-06-23 15:54:33] [INFO] [TIMER] Total Duration: 1:59:08
+[2025-06-23 15:54:33] [INFO] 
+[2025-06-23 15:54:33] [INFO] [OK] Completed Steps (4):
+[2025-06-23 15:54:33] [INFO]    [OK] Content Generation
+[2025-06-23 15:54:33] [INFO]    [OK] Beat Synchronization
+[2025-06-23 15:54:33] [INFO]    [OK] 4K Upscaling
+[2025-06-23 15:54:33] [INFO]    [OK] Crop to Reels
+[2025-06-23 15:54:33] [INFO] [ERROR] Failed Steps (1):
+[2025-06-23 15:54:33] [INFO]    [ERROR] Viral Metadata Generation
+[2025-06-23 15:54:33] [INFO] 
+[2025-06-23 15:54:33] [INFO] [WARN] PIPELINE PARTIALLY COMPLETED
+[2025-06-23 15:54:33] [INFO]    Core content generated but some final steps failed
+[2025-06-23 15:54:33] [INFO] ================================================================================
+[2025-06-24 07:45:46] [INFO] ================================================================================
+[2025-06-24 07:45:46] [INFO] [MOVIE] STARTING COMPLETE DANCER CONTENT PIPELINE
+[2025-06-24 07:45:46] [INFO] ================================================================================
+[2025-06-24 07:45:46] [INFO] [ROCKET] Starting API server in background...
+[2025-06-24 07:45:46] [INFO]    API server PID: 13108
+[2025-06-24 07:45:46] [INFO]    Waiting for API server to initialize...
+[2025-06-24 07:45:54] [INFO] [OK] API server started successfully
+[2025-06-24 07:45:54] [INFO] [ROCKET] Starting Step: Content Generation
+[2025-06-24 07:45:54] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_without_faceswap.py
+[2025-06-24 08:46:30] [INFO] [STOP] Stopping API server...
+[2025-06-24 08:46:30] [INFO] [OK] API server stopped gracefully
+[2025-06-24 09:10:22] [INFO] ================================================================================
+[2025-06-24 09:10:22] [INFO] [MOVIE] STARTING COMPLETE DANCER CONTENT PIPELINE
+[2025-06-24 09:10:22] [INFO] ================================================================================
+[2025-06-24 09:10:22] [INFO] [ROCKET] Starting API server in background...
+[2025-06-24 09:10:22] [INFO]    API server PID: 41708
+[2025-06-24 09:10:22] [INFO]    Waiting for API server to initialize...
+[2025-06-24 09:10:30] [INFO] [OK] API server started successfully
+[2025-06-24 09:10:30] [INFO] [ROCKET] Starting Step: Content Generation
+[2025-06-24 09:10:30] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\main_automation_without_faceswap.py
+[2025-06-24 11:01:38] [INFO] [OK] COMPLETED: Content Generation
+[2025-06-24 11:01:41] [INFO] [ROCKET] Starting Step: Beat Synchronization
+[2025-06-24 11:01:41] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\beat_sync_single.py
+[2025-06-24 11:09:09] [INFO] [OK] COMPLETED: Beat Synchronization
+[2025-06-24 11:09:12] [INFO] [ROCKET] Starting Step: 4K Upscaling
+[2025-06-24 11:09:12] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\upscale_4k_parallel.py
+[2025-06-24 12:06:55] [INFO] [OK] COMPLETED: 4K Upscaling
+[2025-06-24 12:06:58] [INFO] [ROCKET] Starting Step: Crop to Reels
+[2025-06-24 12:06:58] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\crop_to_reels.py
+[2025-06-24 12:11:18] [INFO] [OK] COMPLETED: Crop to Reels
+[2025-06-24 12:11:21] [INFO] [ROCKET] Starting Step: Viral Metadata Generation
+[2025-06-24 12:11:21] [INFO]    Command: D:\Comfy_UI_V20\ComfyUI\output\dancer\venv\Scripts\python.exe D:\Comfy_UI_V20\ComfyUI\output\dancer\youtube_metadata_generator.py
+[2025-06-24 12:11:22] [ERROR] [ERROR] FAILED: Viral Metadata Generation
+[2025-06-24 12:11:22] [ERROR]    Exit code: 1
+[2025-06-24 12:11:22] [WARN] [WARN] Continuing despite optional step failure
+[2025-06-24 12:11:25] [INFO] [UPLOAD] Auto-upload disabled - videos ready for manual upload
+[2025-06-24 12:11:25] [INFO] [STOP] Stopping API server...
+[2025-06-24 12:11:25] [INFO] [OK] API server stopped gracefully
+[2025-06-24 12:11:25] [INFO] ================================================================================
+[2025-06-24 12:11:25] [INFO] [CHART] PIPELINE EXECUTION SUMMARY
+[2025-06-24 12:11:25] [INFO] ================================================================================
+[2025-06-24 12:11:25] [INFO] [CLOCK] Start Time: 2025-06-24 09:10:22
+[2025-06-24 12:11:25] [INFO] [CLOCK] End Time: 2025-06-24 12:11:25
+[2025-06-24 12:11:25] [INFO] [TIMER] Total Duration: 3:01:02
+[2025-06-24 12:11:25] [INFO] 
+[2025-06-24 12:11:25] [INFO] [OK] Completed Steps (4):
+[2025-06-24 12:11:25] [INFO]    [OK] Content Generation
+[2025-06-24 12:11:25] [INFO]    [OK] Beat Synchronization
+[2025-06-24 12:11:25] [INFO]    [OK] 4K Upscaling
+[2025-06-24 12:11:25] [INFO]    [OK] Crop to Reels
+[2025-06-24 12:11:25] [INFO] [ERROR] Failed Steps (1):
+[2025-06-24 12:11:25] [INFO]    [ERROR] Viral Metadata Generation
+[2025-06-24 12:11:25] [INFO] 
+[2025-06-24 12:11:25] [INFO] [WARN] PIPELINE PARTIALLY COMPLETED
+[2025-06-24 12:11:25] [INFO]    Core content generated but some final steps failed
+[2025-06-24 12:11:25] [INFO] ================================================================================
