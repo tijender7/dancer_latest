@@ -9,14 +9,52 @@ This comprehensive guide provides step-by-step instructions for deploying and ex
 ```
 music_automation/
 ├── core/                    # Core automation scripts
+│   ├── main_automation_music.py       # Main automation logic
+│   ├── api_server_v5_music.py         # FastAPI server
+│   ├── run_pipeline_music.py          # Pipeline orchestrator
+│   ├── music_pipeline_all_in_one.py   # All-in-one pipeline
+│   └── logs/                          # Core logs
 ├── audio_processing/        # Audio analysis & processing
+│   ├── audio_to_prompts_generator.py  # Music analysis
+│   ├── quick_audio_capture.py         # Audio capture
+│   └── test_whisper_transcription.py  # Whisper testing
 ├── video_compilation/       # Video compilation tools
+│   ├── music_video_beat_sync_compiler.py  # Beat sync compiler
+│   ├── music_video_fast_compiler.py       # Fast compiler
+│   ├── music_video_image_compiler.py      # Image compiler
+│   ├── music_upscale.py                   # Video upscaling
+│   └── logs/                              # Compilation logs
 ├── beat_sync/              # Beat synchronization
+│   ├── beat_sync_single.py            # Single beat sync
+│   ├── test_beat_sync_discovery.py    # Beat sync testing
+│   └── run_beat_sync_compiler.bat     # Batch runner
 ├── karaoke/                # Karaoke features
+│   ├── test_word_level_karaoke.py     # Word-level karaoke
+│   └── test_karaoke_fix.py            # Karaoke fixes
 ├── config/                 # Configuration files
+│   ├── config_music.json              # Main configuration
+│   └── base_workflows/                # ComfyUI workflows
+│       └── API_flux_without_faceswap_music.json
 ├── debug_tools/            # Debugging & testing
+│   ├── debug_music_pipeline.py       # Pipeline debugging
+│   ├── test_approval_format.py       # Approval testing
+│   └── test_*.py                     # Various tests
 ├── docs/                   # Documentation
-└── assets/                 # Assets & media
+│   ├── MUSIC_AUTOMATION_DOCUMENTATION.md  # Main docs
+│   ├── README_BEAT_SYNC_COMPILER.md       # Beat sync docs
+│   ├── README_KARAOKE_FEATURES.md         # Karaoke docs
+│   └── AUTOMATION_DEVELOPMENT_LEARNINGS.md # Dev learnings
+├── assets/                 # Assets & media
+│   └── music.mp3                      # Sample music file
+├── logs/                   # Main log directory
+├── output_runs_music/      # Generated content output
+│   └── Run_YYYYMMDD_HHMMSS_music_images/
+├── run_music_automation.py # Main entry point
+├── setup_environment.py   # Environment setup
+├── validate_setup.py      # Setup validation
+├── DEPLOYMENT_GUIDE.md    # This file
+├── README.md              # Main documentation
+└── TESTING_GUIDE.md       # Testing procedures
 ```
 
 ## 📋 Prerequisites
@@ -116,12 +154,16 @@ COMFYUI_PORT=8188
 ### 4. Directory Structure Setup
 
 ```bash
-# Create output directories
+# Create required output directories
 mkdir -p H:/dancers_content
 mkdir -p D:/Comfy_UI_V20/ComfyUI/output/dancer/songs
 mkdir -p music_automation/logs
-mkdir -p music_automation/temp_video_starts
 mkdir -p music_automation/output_runs_music
+mkdir -p D:/Comfy_UI_V20/ComfyUI/input/temp_video_starts
+
+# Verify structure exists
+ls -la music_automation/
+ls -la H:/dancers_content/
 ```
 
 ## 🤖 ComfyUI Setup
@@ -274,43 +316,77 @@ tail -f logs/automation_music_pipeline_*.log
 ### Complete Execution Flow
 
 1. **Audio Analysis** (5-10 minutes)
-   - Analyze music file with Google Gemini
-   - Generate timestamped prompts
-   - Create run folder
+   - Analyze music file with Google Gemini AI
+   - Generate timestamped prompts based on musical segments
+   - Create structured output folder: `H:/dancers_content/Run_YYYYMMDD_HHMMSS_music_images/`
 
 2. **Image Generation** (10-30 minutes)
-   - Generate images based on prompts
-   - Send to Telegram for approval
-   - Wait for user approval decisions
+   - Generate Lord Shiva themed images based on prompts
+   - Send images to Telegram for user approval
+   - Wait for user approval decisions via Telegram bot
 
 3. **Video Generation** (20-60 minutes)
-   - Process approved images
-   - Generate videos using WanVideo
-   - Apply deity-specific enhancements
+   - Process approved images to generate videos
+   - Use WanVideo models for image-to-video conversion
+   - Apply deity-specific enhancements and effects
 
-4. **Compilation** (5-15 minutes)
-   - Compile videos with beat sync
-   - Add karaoke subtitles (if enabled)
-   - Create final output
+4. **Beat Sync Compilation** (5-15 minutes)
+   - Compile videos with beat synchronization
+   - Add karaoke subtitles with Hinglish support (optional)
+   - Create final music video output
 
-### Manual Execution Steps
+### Execution Methods
 
+#### Method 1: Single Command (Recommended)
 ```bash
-# Step 1: Audio Analysis
-cd music_automation/audio_processing
-python audio_to_prompts_generator.py
+# Navigate to music automation directory
+cd music_automation
 
-# Step 2: Main Automation
-cd ../core
-python main_automation_music.py
+# Run complete automation pipeline
+python run_music_automation.py --mode automation
 
-# Step 3: Beat Sync Compilation
-cd ../video_compilation
-python music_video_beat_sync_compiler.py
+# Monitor progress
+tail -f logs/automation_music_pipeline_*.log
+```
 
-# Step 4: Karaoke Features (Optional)
-cd ../karaoke
-python test_word_level_karaoke.py
+#### Method 2: Step-by-Step Manual Execution
+```bash
+# Step 1: Audio Analysis (5-10 minutes)
+cd music_automation
+python audio_processing/audio_to_prompts_generator.py
+
+# Step 2: Main Automation Pipeline (30-60 minutes)
+python core/main_automation_music.py
+
+# Step 3: Beat Sync Compilation (5-15 minutes)  
+python video_compilation/music_video_beat_sync_compiler.py
+```
+
+#### Method 3: Component-Specific Execution
+```bash
+# Audio analysis only
+python run_music_automation.py --mode audio-only
+
+# Video generation only (after images approved)
+python run_music_automation.py --mode video-only
+
+# Beat sync compilation only
+python run_music_automation.py --mode beat-sync
+
+# Test mode (limited processing)
+python run_music_automation.py --mode automation --test
+```
+
+#### Method 4: Alternative Core Scripts
+```bash
+# All-in-one pipeline
+python core/music_pipeline_all_in_one.py
+
+# Pipeline orchestrator  
+python core/run_pipeline_music.py
+
+# Approval-only mode
+python approval_only.py
 ```
 
 ## 🧪 Testing & Validation
